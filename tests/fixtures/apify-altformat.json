@@ -1,0 +1,104 @@
+{
+ "_herkunft": "Repraesentative Apify-Rohsaetze der drei bisher genutzten Actors, gebaut aus den Kandidatenlisten in normalize.js und references/datenschema.md. SYNTHETISCH: im Repo lag keine echte Altrohdatei vor (in Phase 0 geprueft). Sobald ein echter L3-Lauf vorliegt, sollte dieser Datensatz durch die echte Rohdatei ersetzt werden.",
+ "daten": {
+  "mobile.de": [
+   {
+    "id": "412345678",
+    "url": "https://suchen.mobile.de/fahrzeuge/details.html?id=412345678",
+    "title": "VW Golf VII 2.0 TDI Highline",
+    "subTitle": "Highline BMT",
+    "bodyType": "Limousine",
+    "transmission": "Automatik",
+    "doors": 5,
+    "price": {
+     "total": {
+      "amount": 18900
+     }
+    },
+    "attributes": {
+     "Mileage": "95.000 km",
+     "First Registration": "06/2018",
+     "Power": "110 kW (150 PS)",
+     "Climatisation": "Automatic climatisation, 2 zones"
+    },
+    "features": [
+     "Navigationssystem",
+     "Sitzheizung"
+    ],
+    "description": "Scheckheftgepflegt",
+    "images": [
+     "https://m.mobile.de/yams-proxy/img.classistatic.de/api/v1/abc/1"
+    ],
+    "dealerDetails": {
+     "location": {
+      "latitude": 51.33,
+      "longitude": 6.56
+     },
+     "addressStructured": {
+      "zip": "47798"
+     }
+    }
+   }
+  ],
+  "autoscout24": [
+   {
+    "id": "as24-1",
+    "url": "https://www.autoscout24.de/angebote/xyz",
+    "title": "Volkswagen Golf 1.5 TSI",
+    "variant": "Life",
+    "bodyType": "Kombi",
+    "transmission": "Schaltgetriebe",
+    "numberOfDoors": 5,
+    "price": {
+     "amount": 16490
+    },
+    "mileageKm": 78500,
+    "firstRegistration": "2019-04-01",
+    "powerKw": 96,
+    "equipment": [
+     "Klimaautomatik",
+     "Einparkhilfe"
+    ],
+    "imageUrls": [
+     "https://prod.pictures.autoscout24.net/listing-images/a_b.jpg/250x188.webp"
+    ],
+    "location": {
+     "latitude": 51.22,
+     "longitude": 6.77,
+     "zipcode": "40213"
+    }
+   }
+  ],
+  "kleinanzeigen": [
+   {
+    "adId": "3503812806",
+    "url": "https://www.kleinanzeigen.de/s-anzeige/x/3503812806-216-2143",
+    "title": "Volkswagen Tiguan 2.0 TSI",
+    "product": {
+     "attributes": {
+      "Kilometerstand": "99.132 km",
+      "Erstzulassung": "Juni 2017",
+      "Leistung": "179 PS",
+      "Getriebe": "Automatik",
+      "Fahrzeugtyp": "SUV/Geländewagen",
+      "Anzahl Türen": "4/5",
+      "Ausstattung": [
+       "Navigationssystem",
+       "Sitzheizung"
+      ]
+     }
+    },
+    "price": 18900,
+    "location": {
+     "zip": "82383",
+     "city": "Hohenpeißenberg"
+    },
+    "images": [
+     {
+      "url": "https://img.kleinanzeigen.de/api/v1/prod-ads/images/x?rule=$_59.JPG"
+     }
+    ]
+   }
+  ]
+ }
+}
