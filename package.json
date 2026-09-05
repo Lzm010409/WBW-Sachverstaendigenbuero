@@ -4,7 +4,7 @@
   "private": true,
   "description": "Plugin des Kfz-Sachverstaendigenbueros Gollenstede: WBW-Vergleichsfahrzeuge",
   "scripts": {
-    "test": "node --test tests/e1-*.test.js tests/e3-*.test.js tests/e2-*.test.js tests/e5-*.test.js tests/nf-*.test.js",
+    "test": "node --test tests/e1-*.test.js tests/e3-*.test.js tests/e2-*.test.js tests/e5-*.test.js tests/e6-*.test.js tests/nf-*.test.js",
     "test:e1": "node --test tests/e1-*.test.js",
     "test:e2": "node --test tests/e2-*.test.js",
     "test:e3": "node --test tests/e3-*.test.js",

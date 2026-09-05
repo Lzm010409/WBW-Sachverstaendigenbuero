@@ -1,0 +1,47 @@
+# Kleinanzeigen-Dienst mit vorgeschaltetem Zugriffsschutz.
+#
+# Der Schutz haengt NICHT mehr an Traefik-Labels, sondern an zwei ganz normalen
+# Umgebungsvariablen (KA_API_USER, KA_API_PASS). In Coolify stehen die im Reiter
+# "Environment Variables" der Anwendung und sind dort jederzeit aenderbar; ein
+# Redeploy genuegt. Custom Labels werden fuer diesen Aufbau nicht gebraucht -
+# Coolify darf seine eigenen erzeugen.
+#
+# Aufbau in Coolify:
+#   Neue Ressource -> Docker Compose -> aus diesem Git-Repository
+#   Base Directory : /ops/ka-api
+#   Compose-Datei  : docker-compose.yaml
+#   Domain         : dem Dienst "auth" zuweisen (Port 8080)
+#   Env-Variablen  : KA_API_USER, KA_API_PASS
+#
+# Wichtig: nur "auth" bekommt eine Domain. "api" ist ausschliesslich ueber das
+# interne Compose-Netz erreichbar und hat keinen eigenen Router - der Dienst
+# steht damit an keiner Stelle ungeschuetzt im Netz.
+
+services:
+  auth:
+    build:
+      context: ./auth-proxy
+    restart: unless-stopped
+    environment:
+      # Aus den Coolify-Umgebungsvariablen. Ohne beide startet der Vorschalter
+      # nicht - er laesst den Dienst lieber ausfallen als ihn offen stehen.
+      KA_API_USER: ${KA_API_USER}
+      KA_API_PASS: ${KA_API_PASS}
+      PROXY_UPSTREAM: http://api:8000
+      PROXY_PORT: "8080"
+      PROXY_REALM: WBW-Beschaffung
+    expose:
+      - "8080"
+    depends_on:
+      - api
+
+  api:
+    # Unveraenderter Upstream (DanielWTE/ebay-kleinanzeigen-api, MIT), auf einen
+    # Commit gepinnt. Kein "latest": ein stiller Versionssprung waere genau die
+    # Art Aenderung, die man erst am kaputten Ergebnis bemerkt.
+    image: ghcr.io/danielwte/ebay-kleinanzeigen-api:sha-da2fb02
+    restart: unless-stopped
+    # Absichtlich "expose" und nicht "ports": nur im Compose-Netz erreichbar,
+    # nicht auf dem Host und nicht ueber Traefik.
+    expose:
+      - "8000"

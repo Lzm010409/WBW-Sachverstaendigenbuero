@@ -101,44 +101,69 @@ an der Auth-Middleware, nicht am Schema. Der direkte Zugriff auf kleinanzeigen.d
 aus fremden Netzen wird IP-gesperrt — deshalb läuft der Dienst auf der eigenen
 Infrastruktur.
 
-#### Wo die Zugangsdaten stehen und wie man sie ändert
+#### Zugriffsschutz: der Weg weg von den Labels
 
-Benutzername und Passwort stehen **ausschließlich** in einem Custom Label der
-Coolify-Anwendung, das Passwort dort nur als Hash:
+**Bisheriger Stand (noch ausgerollt).** Benutzer und Passwort stehen in einem Custom
+Label der Coolify-Anwendung, das Passwort dort nur als Hash:
 
 ```
 traefik.http.middlewares.ka-auth.basicauth.users=wbw:{SHA}<base64(sha1(passwort))>
 ```
 
-Der Hash ist nicht rückrechenbar — ein vergessenes Passwort kann nur **neu gesetzt**,
-nicht ausgelesen werden.
+Das hat zwei Nachteile, die sich im Betrieb gerächt haben. Erstens ist der Hash nicht
+rückrechenbar — ein vergessenes Passwort lässt sich nur neu setzen. Zweitens sind per
+API gesetzte Labels **in der Coolify-Oberfläche nicht editierbar**, und die API gibt
+`custom_labels` nicht einmal aus (ein `GET` auf die Anwendung liefert 83 Felder, keines
+davon enthält „label"). Ein Passwortwechsel bedeutet deshalb, den vollständigen
+Labelsatz neu zu schreiben — gesetzte `custom_labels` ersetzen die von Coolify
+erzeugten, eine Teiländerung von Hand legt den Dienst mit HTTP 503 lahm. Genau dafür
+liegt `ka-passwort-setzen.sh` im Wurzelverzeichnis (`--pruefen`, `--zeigen`, setzen).
 
-**In der Coolify-Oberfläche lässt sich das nicht ändern.** Der Labelsatz wurde über
-die API gesetzt; die API gibt `custom_labels` nicht einmal wieder aus (ein `GET` auf
-die Anwendung liefert 83 Felder, keines davon enthält „label"). Der Weg, der
-nachweislich funktioniert, ist derselbe, über den die Labels eingerichtet wurden —
-dafür liegt `ka-passwort-setzen.sh` im Wurzelverzeichnis:
+**Neuer Aufbau (in `ops/ka-api/`, noch nicht ausgerollt).** Der Schutz hängt an zwei
+gewöhnlichen Umgebungsvariablen statt an Labels. Ein winziger Vorschalter
+(`ops/ka-api/auth-proxy/proxy.js`, Node-Bordmittel, keine Abhängigkeiten) prüft Basic
+Auth gegen `KA_API_USER`/`KA_API_PASS` und reicht die Anfrage erst danach an den
+unveränderten Dienst weiter. In Coolify stehen beide Werte dann im Reiter
+*Environment Variables* und sind dort jederzeit änderbar; ein Redeploy genügt. Custom
+Labels braucht dieser Aufbau nicht — Coolify darf seine eigenen erzeugen.
 
-```
-./ka-passwort-setzen.sh --pruefen              # 401 / 401 / 200 erwarten
-./ka-passwort-setzen.sh --zeigen 'neues-pw'    # Labelsatz ansehen, nichts senden
-./ka-passwort-setzen.sh 'neues-pw'             # schreiben, ausrollen, prüfen
-```
+Der Dienst selbst bekommt **keine Domain und keinen Router**: im Compose-Verbund ist er
+nur über das interne Netz erreichbar (`expose`, nicht `ports`). Der Vorschalter ist der
+einzige Weg hinein. Sein Docker-HEALTHCHECK verlangt auf eine Anfrage *ohne*
+Zugangsdaten eine 401 — damit fällt ein stiller Ausfall des Zugriffsschutzes schon
+beim Ausrollen auf, statt erst dann, wenn jemand den offenen Dienst findet.
 
-Das Skript schreibt **immer den vollständigen Labelsatz** (Router, Service, Port,
-TLS, Middleware) — gesetzte `custom_labels` ersetzen die von Coolify erzeugten, eine
-Teiländerung von Hand legt den Dienst mit HTTP 503 lahm. Danach stößt es einen
-Redeploy an, wartet, prüft 401 / 401 / 200 und zieht `KA_API_PASS` in der `.env`
-nach. Es braucht `COOLIFY_BASE_URL` und `COOLIFY_API_TOKEN` — entweder in der `.env`
-oder als Umgebungsvariablen; beides funktioniert, gesetzte Umgebungsvariablen bleiben
-erhalten, solange die `.env` sie nicht mit einem leeren Wert überschreibt.
+Aufbau in Coolify:
 
-Das Passwort wird dabei einfach zitiert in die `.env` geschrieben (`KA_API_PASS='…'`).
-Beide Leser kommen damit zurecht: die Shell beim `. ./.env` und `ladeEnv()` in
-`gemeinsam.js`, das genau ein Paar umschließender Anführungszeichen entfernt. Ein
-einfaches Anführungszeichen im Passwort lehnt das Skript deshalb ab.
+| Feld | Wert |
+| --- | --- |
+| Ressource | Docker Compose, aus diesem Git-Repository |
+| Base Directory | `/ops/ka-api` |
+| Compose-Datei | `docker-compose.yaml` |
+| Domain | dem Dienst **`auth`** zuweisen, Port `8080` |
+| Env-Variablen | `KA_API_USER`, `KA_API_PASS` |
+| Healthcheck | Coolifys eigenen **aus** lassen (siehe unten) |
 
-Coolifys Feld `http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
+Coolifys HTTP-Healthcheck hat schon einmal dazu geführt, dass ein funktionierender
+Deploy als `exited:unhealthy` galt. Der Docker-HEALTHCHECK des Images tut dasselbe
+zuverlässiger.
+
+Was **belegt** ist: 14 Tests in `tests/e6-authproxy.test.js` — ohne Zugangsdaten 401
+und der Dienst sieht die Anfrage nie, falsches Passwort 401, falscher Benutzer 401,
+vier kaputte `Authorization`-Header kommen nicht durch, richtige Zugangsdaten 200 mit
+unveränderter Antwort, Methode/Pfad/Abfrageteil/Körper werden nicht verbogen, das
+Passwort wird nicht an den Dienst weitergereicht und steht nicht im Log, ein
+unerreichbarer Dienst ergibt 502 statt 200, ohne Zugangsdaten in der Umgebung startet
+der Vorschalter gar nicht erst. Dazu die echte Kette `kleinanzeigen.js` → Vorschalter
+→ Dienst, einmal mit richtigem und einmal mit falschem Passwort.
+
+Was **nicht** belegt ist: der Aufbau ist nie in Coolify ausgerollt worden. In der
+Umgebung, in der er entstand, gab es keinen Docker-Daemon und keine Schreibrechte auf
+die Coolify-API. Solange die Migration nicht gelaufen ist, schützt weiterhin der
+Labelsatz, und `ka-passwort-setzen.sh` bleibt der Weg für einen Passwortwechsel.
+
+Der alte Aufbau bleibt bis dahin unangetastet. Coolifys Feld
+`http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
 (`is_http_basic_auth_enabled = false`) — ein Überbleibsel des gescheiterten Versuchs
 mit der eingebauten Funktion; es ist nicht die Quelle der Wahrheit. Ebenso steht in
 `fqdn` nur der sslip-Hostname; der Traefik-Router bedient trotzdem beide Hostnamen.
