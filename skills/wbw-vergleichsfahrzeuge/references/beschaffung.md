@@ -111,33 +111,37 @@ traefik.http.middlewares.ka-auth.basicauth.users=wbw:{SHA}<base64(sha1(passwort)
 ```
 
 Der Hash ist nicht rückrechenbar — ein vergessenes Passwort kann nur **neu gesetzt**,
-nicht ausgelesen werden. Die Coolify-API liefert `custom_labels` nicht mit aus; die
-Labels sind nur in der Oberfläche sichtbar:
+nicht ausgelesen werden.
 
-> Projekt `wbw-adapterschicht` → Anwendung `ka-api` → *Configuration* → *Custom Labels*
-
-Passwort wechseln (drei Schritte):
-
-1. Hash erzeugen:
-   `printf '%s' 'NEUES_PASSWORT' | openssl sha1 -binary | openssl base64`
-2. In den Custom Labels die Zeile `…basicauth.users=wbw:{SHA}…` durch den neuen Hash
-   ersetzen, speichern, **Redeploy**. Alle übrigen Labels unangetastet lassen — der
-   Satz ersetzt die von Coolify erzeugten und muss vollständig bleiben.
-3. `KA_API_PASS` in der `.env` auf denselben Klartext setzen.
-
-Danach prüfen — erwartet 401 / 401 / 200:
+**In der Coolify-Oberfläche lässt sich das nicht ändern.** Der Labelsatz wurde über
+die API gesetzt; die API gibt `custom_labels` nicht einmal wieder aus (ein `GET` auf
+die Anwendung liefert 83 Felder, keines davon enthält „label"). Der Weg, der
+nachweislich funktioniert, ist derselbe, über den die Labels eingerichtet wurden —
+dafür liegt `ka-passwort-setzen.sh` im Wurzelverzeichnis:
 
 ```
-curl -s -o /dev/null -w '%{http_code}\n' https://ka-api.gollenstede.app/
-curl -s -o /dev/null -w '%{http_code}\n' -u wbw:falsch https://ka-api.gollenstede.app/
-curl -s -o /dev/null -w '%{http_code}\n' -u wbw:NEUES_PASSWORT https://ka-api.gollenstede.app/
+./ka-passwort-setzen.sh --pruefen              # 401 / 401 / 200 erwarten
+./ka-passwort-setzen.sh --zeigen 'neues-pw'    # Labelsatz ansehen, nichts senden
+./ka-passwort-setzen.sh 'neues-pw'             # schreiben, ausrollen, prüfen
 ```
+
+Das Skript schreibt **immer den vollständigen Labelsatz** (Router, Service, Port,
+TLS, Middleware) — gesetzte `custom_labels` ersetzen die von Coolify erzeugten, eine
+Teiländerung von Hand legt den Dienst mit HTTP 503 lahm. Danach stößt es einen
+Redeploy an, wartet, prüft 401 / 401 / 200 und zieht `KA_API_PASS` in der `.env`
+nach. Es braucht `COOLIFY_BASE_URL` und `COOLIFY_API_TOKEN` — entweder in der `.env`
+oder als Umgebungsvariablen; beides funktioniert, gesetzte Umgebungsvariablen bleiben
+erhalten, solange die `.env` sie nicht mit einem leeren Wert überschreibt.
+
+Das Passwort wird dabei einfach zitiert in die `.env` geschrieben (`KA_API_PASS='…'`).
+Beide Leser kommen damit zurecht: die Shell beim `. ./.env` und `ladeEnv()` in
+`gemeinsam.js`, das genau ein Paar umschließender Anführungszeichen entfernt. Ein
+einfaches Anführungszeichen im Passwort lehnt das Skript deshalb ab.
 
 Coolifys Feld `http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
-(`is_http_basic_auth_enabled = false`) — es ist ein Überbleibsel des gescheiterten
-Versuchs mit der eingebauten Funktion und darf nicht als Quelle der Wahrheit gelten.
-Ebenso steht in `fqdn` nur der sslip-Hostname; der Traefik-Router bedient trotzdem
-beide Hostnamen.
+(`is_http_basic_auth_enabled = false`) — ein Überbleibsel des gescheiterten Versuchs
+mit der eingebauten Funktion; es ist nicht die Quelle der Wahrheit. Ebenso steht in
+`fqdn` nur der sslip-Hostname; der Traefik-Router bedient trotzdem beide Hostnamen.
 
 Drei Korrekturen gegenüber den ursprünglichen Annahmen, alle **live** bestätigt:
 
