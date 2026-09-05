@@ -73,7 +73,12 @@ function pruefeKritisch(name, obj) {
 }
 
 async function main() {
-  let ok = true;
+  // Zwei verschiedene Dinge, die nicht verwechselt werden dürfen:
+  //   strukturfehler -> ein Portal hat umgebaut, das Mapping ist zu prüfen.
+  //   netzfehler     -> Zeitüberschreitung/HTTP-Fehler, der Lauf ist unschlüssig.
+  // Ein Timeout als "Portal hat umgebaut" zu melden, macht den Wächter unglaubwürdig.
+  let strukturfehler = false;
+  let netzfehler = [];
   console.log("Schema-Wächter — vergleicht Live-Antworten gegen die Fixtures.");
 
   // ---- AutoScout24 ----
@@ -91,8 +96,8 @@ async function main() {
     if (!live) throw new Error("keine Inserate in der Live-Antwort");
     const fix = as24.findeListings(JSON.parse(fs.readFileSync(path.join(FIX, "autoscout24-suchseite.json"), "utf8")))[0];
     vergleiche("AutoScout24 Trefferliste", fix, live);
-    ok = pruefeKritisch("autoscout24", live) && ok;
-  } catch (e) { console.log(`\n--- AutoScout24 ---\n  FEHLER: ${e.message}`); ok = false; }
+    if (!pruefeKritisch("autoscout24", live)) strukturfehler = true;
+  } catch (e) { console.log(`\n--- AutoScout24 ---\n  NETZFEHLER: ${e.message}`); netzfehler.push("AutoScout24: " + e.message); }
 
   // ---- Kleinanzeigen (eigener Dienst) ----
   const basis = String(process.env.KA_API_BASE || "").replace(/\/+$/, "");
@@ -110,7 +115,7 @@ async function main() {
       if (liste.status !== 200) throw new Error(`HTTP ${liste.status} von /inserate-by-url`);
       const fixListe = JSON.parse(fs.readFileSync(path.join(FIX, "kleinanzeigen-liste.json"), "utf8"));
       vergleiche("Kleinanzeigen Trefferliste", fixListe, liste.daten);
-      ok = pruefeKritisch("kleinanzeigenListe", liste.daten) && ok;
+      if (!pruefeKritisch("kleinanzeigenListe", liste.daten)) strukturfehler = true;
 
       const adid = (liste.daten.results || [])[0] && liste.daten.results[0].adid;
       if (adid) {
@@ -119,14 +124,23 @@ async function main() {
         const fixDet = JSON.parse(fs.readFileSync(path.join(FIX, "kleinanzeigen-detail.json"), "utf8"))[0];
         vergleiche("Kleinanzeigen Detail", fixDet, det.daten);
         // details-Labels sind DOM-abhängig: nur die kritischen prüfen, nicht alle.
-        ok = pruefeKritisch("kleinanzeigenDetail", det.daten) && ok;
+        if (!pruefeKritisch("kleinanzeigenDetail", det.daten)) strukturfehler = true;
       }
-    } catch (e) { console.log(`\n--- Kleinanzeigen ---\n  FEHLER: ${e.message}`); ok = false; }
+    } catch (e) { console.log(`\n--- Kleinanzeigen ---\n  NETZFEHLER: ${e.message}`); netzfehler.push("Kleinanzeigen: " + e.message); }
   }
 
-  console.log(`\n${ok ? "ERGEBNIS: Struktur unverändert — Mapping trägt weiter."
-                     : "ERGEBNIS: ABWEICHUNG. Mapping im betroffenen Adapter prüfen, BEVOR ein Gutachten läuft."}`);
-  process.exit(ok ? 0 : 1);
+  if (strukturfehler) {
+    console.log("\nERGEBNIS: ABWEICHUNG. Mapping im betroffenen Adapter prüfen, BEVOR ein Gutachten läuft.");
+    process.exit(1);
+  }
+  if (netzfehler.length) {
+    console.log("\nERGEBNIS: UNSCHLÜSSIG — kein Strukturwechsel festgestellt, aber der Lauf war unvollständig:");
+    for (const f of netzfehler) console.log(`  ${f}`);
+    console.log("  Das ist ein Netz-/Verfügbarkeitsproblem, keine Portaländerung. Bitte wiederholen.");
+    process.exit(2);
+  }
+  console.log("\nERGEBNIS: Struktur unverändert — Mapping trägt weiter.");
+  process.exit(0);
 }
 
 main();

@@ -55,7 +55,20 @@ Karosserieform — `pipeline.js` leitet sie aus dem Korb ab.
 ### Kleinanzeigen → trägt über L1 (eigener Dienst)
 
 Dienst: `DanielWTE/ebay-kleinanzeigen-api` (MIT), **unverändert**, als offizielles
-Upstream-Image auf einen Commit gepinnt. Der direkte Zugriff auf kleinanzeigen.de
+Upstream-Image auf Commit `sha-da2fb02` gepinnt. Erreichbar unter
+`https://ka-api.gollenstede.app` (Cloudflare terminiert TLS) und zusätzlich unter
+`https://ka-api.116.202.21.243.sslip.io` — dieselbe Anwendung, beide Hostnamen im
+Traefik-Router, beide durch Basic Auth geschützt.
+
+**Zugriffsschutz:** Basic Auth als Traefik-Middleware über die Custom Labels der
+Coolify-Anwendung. Coolifys eingebaute Basic-Auth-Felder (`is_http_basic_auth_enabled`,
+`http_basic_auth_password`) sind in Version 4.1.2 **wirkungslos** — das Passwort wird
+nicht persistiert und es entsteht keine Middleware; ein Aufruf ohne Zugangsdaten kam
+weiterhin durch. Deshalb der eigene Labelsatz. Achtung: gesetzte `custom_labels`
+**ersetzen** die von Coolify erzeugten, der Satz muss also vollständig sein (Router,
+Service, Ports, TLS). Das HTTP-Router-Ziel leitet bewusst **nicht** auf HTTPS um,
+weil Cloudflare je nach SSL-Modus per HTTP zum Ursprung spricht — der Schutz hängt
+an der Auth-Middleware, nicht am Schema. Der direkte Zugriff auf kleinanzeigen.de
 aus fremden Netzen wird IP-gesperrt — deshalb läuft der Dienst auf der eigenen
 Infrastruktur.
 
