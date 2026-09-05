@@ -20,6 +20,12 @@
 const fs = require("fs");
 const path = require("path");
 
+// .env aus dem Arbeitsordner (oder aufwaerts bis zur Plugin-Wurzel) uebernehmen.
+// Ohne das muesste der Aufrufer die Variablen selbst exportieren - und
+// .env.example waere eine Anleitung, die ins Leere laeuft.
+const { ladeEnv } = require("./adapters/gemeinsam.js");
+const ENV_DATEI = ladeEnv(__dirname);
+
 /**
  * Mindestqualität, damit eine Stufe als erfolgreich gilt. Der realistische
  * Portalumbau liefert nicht NICHTS, sondern 25 Objekte mit lauter null-Feldern.
@@ -210,6 +216,7 @@ async function main() {
   catch (e) { console.error(`${eingabenPfad} ist kein gültiges JSON: ${e.message}`); process.exit(2); }
 
   console.log(`Beschaffung ${portal} …`);
+  if (ENV_DATEI) console.log(`   (Zugangsdaten aus ${ENV_DATEI})`);
   let ergebnis;
   try {
     ergebnis = await beschaffe(portal, eingaben, {

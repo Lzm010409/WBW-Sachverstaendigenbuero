@@ -170,7 +170,24 @@ Geld zu kosten. Ein eigener Test prüft genau diese Sperre.
 
 ## Umgebungsvariablen
 
-Alle in der `.env` (gitignoriert), Vorlage in `.env.example`:
+Alle in der `.env` (gitignoriert), Vorlage in `.env.example`.
+**`fetch-portal.js` liest die Datei selbst** — vom Arbeitsordner aus aufwärts bis
+zur Plugin-Wurzel; die erste gefundene gewinnt. Ein Export von Hand ist nicht
+nötig. Bereits gesetzte Umgebungsvariablen haben Vorrang, eine Datei überschreibt
+also nie eine bewusst gesetzte Variable. Mit `WBW_ENV_DATEI` lässt sich ein
+abweichender Pfad erzwingen. Welche Datei benutzt wurde, steht in der Ausgabe.
+
+**Wer liest was — die Zuständigkeit ist strikt getrennt:**
+
+| Variable | gelesen von | wofür |
+| --- | --- | --- |
+| `KA_API_BASE`, `KA_API_USER`, `KA_API_PASS` | `adapters/kleinanzeigen.js` | **nur** Kleinanzeigen (L1) |
+| `APIFY_TOKEN` | `adapters/apify.js` | **nur** L3, also produktiv nur mobile.de |
+| `BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE` | `adapters/unlocker.js` | L2 (derzeit deaktiviert) |
+
+Der Kleinanzeigen-Adapter berührt `APIFY_TOKEN` an keiner Stelle — er spricht
+ausschließlich mit dem eigenen Dienst.
+
 
 | Variable                          | Wofür                                    |
 | --------------------------------- | ---------------------------------------- |

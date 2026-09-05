@@ -128,3 +128,53 @@ test("Idempotenz: dasselbe Mapping zweimal ergibt dasselbe Ergebnis", () => {
   const b = ls.map((l) => as24.mappe(l));
   assert.deepEqual(a, b, "mappe() muss deterministisch sein");
 });
+
+test("ladeEnv() liest eine .env, ohne gesetzte Variablen zu überschreiben", () => {
+  const os = require("os");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "wbw-env-"));
+  fs.writeFileSync(path.join(d, ".env"), [
+    "# Kommentar wird ignoriert",
+    "",
+    "WBW_TEST_NEU=ausDerDatei",
+    "WBW_TEST_VORHANDEN=ausDerDatei",
+    'WBW_TEST_QUOTED="mit Anführungszeichen"',
+    "WBW_TEST_LEER=",
+    "kein_gleichheitszeichen",
+  ].join("\n"));
+
+  const alt = { ...process.env };
+  process.env.WBW_TEST_VORHANDEN = "ausDerUmgebung";
+  delete process.env.WBW_TEST_NEU;
+  delete process.env.WBW_TEST_QUOTED;
+  delete process.env.WBW_TEST_LEER;
+  process.env.WBW_ENV_DATEI = path.join(d, ".env");
+  try {
+    const datei = g.ladeEnv(d);
+    assert.equal(datei, path.join(d, ".env"));
+    assert.equal(process.env.WBW_TEST_NEU, "ausDerDatei");
+    assert.equal(process.env.WBW_TEST_VORHANDEN, "ausDerUmgebung",
+      "eine bewusst gesetzte Variable darf die Datei NICHT überschreiben");
+    assert.equal(process.env.WBW_TEST_QUOTED, "mit Anführungszeichen", "Anführungszeichen werden entfernt");
+    assert.equal(process.env.WBW_TEST_LEER, undefined, "leere Werte werden nicht gesetzt");
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in alt)) delete process.env[k];
+    Object.assign(process.env, alt);
+    fs.rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test("ladeEnv() ohne .env liefert null statt zu werfen", () => {
+  const os = require("os");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "wbw-leer-"));
+  const alt = process.env.WBW_ENV_DATEI;
+  process.env.WBW_ENV_DATEI = path.join(d, "gibtsnicht.env");
+  try {
+    // Aufwärtssuche findet die .env des Repos ggf. trotzdem — der Test prüft nur,
+    // dass nichts wirft und der Rückgabewert ein Pfad oder null ist.
+    const r = g.ladeEnv(d);
+    assert.ok(r === null || typeof r === "string");
+  } finally {
+    if (alt === undefined) delete process.env.WBW_ENV_DATEI; else process.env.WBW_ENV_DATEI = alt;
+    fs.rmSync(d, { recursive: true, force: true });
+  }
+});

@@ -11,6 +11,47 @@ const tls = require("tls");
 const zlib = require("zlib");
 const { URL } = require("url");
 
+/**
+ * Laedt eine .env aus dem Arbeitsordner oder dem Plugin-Wurzelverzeichnis.
+ * Bewusst ohne dotenv-Abhaengigkeit (der Skill soll ohne `npm install` laufen).
+ * Bereits gesetzte Umgebungsvariablen gewinnen — eine Datei darf nie eine
+ * bewusst gesetzte Variable ueberschreiben.
+ */
+function ladeEnv(startVerzeichnis) {
+  const fs = require("fs");
+  const path = require("path");
+  const kandidaten = [];
+  if (process.env.WBW_ENV_DATEI) kandidaten.push(process.env.WBW_ENV_DATEI);
+  // Vom Arbeitsordner und vom Modulordner aus je bis zu 6 Ebenen aufwaerts suchen.
+  for (const start of [process.cwd(), startVerzeichnis || __dirname]) {
+    let d = start;
+    for (let i = 0; i < 6; i++) {
+      kandidaten.push(path.join(d, ".env"));
+      const oben = path.dirname(d);
+      if (oben === d) break;
+      d = oben;
+    }
+  }
+  for (const datei of kandidaten) {
+    let roh;
+    try { roh = fs.readFileSync(datei, "utf8"); } catch { continue; }
+    for (const zeile of roh.split(/\r?\n/)) {
+      const s = zeile.trim();
+      if (!s || s.startsWith("#")) continue;
+      const i = s.indexOf("=");
+      if (i < 1) continue;
+      const k = s.slice(0, i).trim();
+      let v = s.slice(i + 1).trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      // Bereits gesetzte Variablen gewinnen: eine Datei darf nie eine bewusst
+      // gesetzte Umgebungsvariable ueberschreiben.
+      if (v !== "" && process.env[k] === undefined) process.env[k] = v;
+    }
+    return datei;   // erste gefundene Datei gewinnt
+  }
+  return null;
+}
+
 /** Browser-Headersatz. Ohne diesen antwortet AutoScout24 mit 403. */
 const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -216,7 +257,7 @@ function leeresFahrzeug(quelle) {
 }
 
 module.exports = {
-  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent,
+  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv,
   zahl, ez, plz, ausstattung,
   hole, holeJson, dedupe, leeresFahrzeug,
 };
