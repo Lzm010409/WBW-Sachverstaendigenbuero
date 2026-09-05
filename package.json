@@ -11,6 +11,7 @@
     "test:schema": "node tests/schema-waechter.js",
     "test:live": "node tests/e4-live.js",
     "test:l3": "WBW_ALLOW_PAID=1 node tests/e5-regression.js --nur-l3",
-    "test:e5": "node --test tests/e5-*.test.js"
+    "test:e5": "node --test tests/e5-*.test.js",
+    "paket": "./bauen.sh"
   }
 }

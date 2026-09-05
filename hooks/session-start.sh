@@ -70,5 +70,10 @@ echo "    L2 Bright Data    : $([ -n "$BRIGHT" ] && echo 'Token vorhanden' || ec
 echo "    L3 Apify          : $([ -n "$APIFY" ] && echo 'Token vorhanden - Lauf zusaetzlich mit WBW_ALLOW_PAID=1 freischalten' || echo 'APIFY_TOKEN fehlt (nur fuer mobile.de noetig)')"
 echo "  PDF-Erzeugung      : ${CHROME:-kein Chromium gefunden - Report bleibt HTML}"
 echo "  Zugangsdaten aus   : ${QUELLE:-keine Datei gefunden - siehe $GLOBAL}"
-echo "  Tests              : npm test (offline, kostenlos) | npm run test:schema (Netz) | npm run test:live (Netz)"
+# Die Testsuite gehoert zum Repo, nicht zum ausgelieferten Plugin. Nur melden,
+# wenn sie tatsaechlich danebenliegt - sonst waere der Hinweis in einer reinen
+# Plugin-Installation eine Sackgasse.
+if [ -f "$WURZEL/package.json" ] && [ -d "$WURZEL/tests" ]; then
+  echo "  Tests              : npm test (offline, kostenlos) | npm run test:schema (Netz) | npm run test:live (Netz)"
+fi
 exit 0

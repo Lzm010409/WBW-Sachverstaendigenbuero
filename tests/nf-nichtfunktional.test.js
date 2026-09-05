@@ -224,11 +224,30 @@ test("Marketplace-Manifest ist vollständig und zeigt auf die Plugin-Wurzel", ()
   assert.equal(manifest.version, pkg.version, "und zu package.json — sonst driften die Versionen auseinander");
 });
 
-test("Der SessionStart-Hook existiert und ist ausführbar", () => {
-  const h = path.join(WURZEL, ".claude", "hooks", "session-start.sh");
-  assert.ok(fs.existsSync(h), "in .claude/settings.json registriert — die Datei muss es geben");
+test("Der SessionStart-Hook liegt im Plugin und ist an beiden Stellen registriert", () => {
+  // Der Hook muss IM Plugin liegen, nicht unter .claude/ - sonst reist er weder
+  // in der .plugin-Datei noch bei einer Marketplace-Installation mit.
+  const h = path.join(WURZEL, "hooks", "session-start.sh");
+  assert.ok(fs.existsSync(h), "hooks/session-start.sh muss existieren");
   assert.ok(fs.statSync(h).mode & 0o111, "muss ausführbar sein");
+
+  // 1. Plugin-Registrierung (reist mit)
+  const hj = JSON.parse(fs.readFileSync(path.join(WURZEL, "hooks", "hooks.json"), "utf8"));
+  const pluginCmds = hj.hooks.SessionStart.flatMap((e) => e.hooks).map((x) => x.command);
+  assert.ok(pluginCmds.some((c) => c.includes("${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh")),
+    "muss über ${CLAUDE_PLUGIN_ROOT} referenziert sein, nicht über einen festen Pfad");
+
+  // 2. Projekt-Registrierung (für die Arbeit aus dem Repo heraus)
   const s = JSON.parse(fs.readFileSync(path.join(WURZEL, ".claude", "settings.json"), "utf8"));
-  const cmds = s.hooks.SessionStart.flatMap((e) => e.hooks).map((x) => x.command);
-  assert.ok(cmds.some((c) => c.includes("session-start.sh")));
+  const projektCmds = s.hooks.SessionStart.flatMap((e) => e.hooks).map((x) => x.command);
+  assert.ok(projektCmds.some((c) => c.includes("hooks/session-start.sh")));
+  assert.ok(!projektCmds.some((c) => c.includes(".claude/hooks/")),
+    "der alte Ort unter .claude/ darf nicht mehr referenziert werden");
+});
+
+test("Der Hook meldet Tests nur, wenn sie tatsächlich danebenliegen", () => {
+  // In einer reinen Plugin-Installation gibt es keine Testsuite - ein Hinweis
+  // auf `npm test` waere dort eine Sackgasse.
+  const s = fs.readFileSync(path.join(WURZEL, "hooks", "session-start.sh"), "utf8");
+  assert.match(s, /if \[ -f "\$WURZEL\/package\.json" \] && \[ -d "\$WURZEL\/tests" \]/);
 });

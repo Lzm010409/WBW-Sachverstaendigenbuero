@@ -109,6 +109,24 @@ WBW-Vergleichsfahrzeug-Finder bereit (Node v22.22.2, keine Abhaengigkeiten zu in
   Zugangsdaten aus   : /home/du/.claude/wbw-vergleichsfahrzeuge.env
 ```
 
+### Als Datei (Cowork)
+
+Cowork installiert Plugins aus einer `.plugin`-Datei. Bauen:
+
+```bash
+./bauen.sh            # oder: npm run paket
+# -> wbw-vergleichsfahrzeug-finder.plugin
+```
+
+Die Datei enthält nur Laufzeit-Bestandteile: `.claude-plugin/plugin.json`,
+`skills/`, `hooks/`, `README.md`, `.env.example`. **Nicht** enthalten sind die
+Tests, `.claude/` (das ist Projektkonfiguration dieses Repos) und selbstverständlich
+keine `.env`. Ein Sicherheitsnetz im Bauskript bricht ab, falls ein Wert aus der
+`.env` doch im Paket landen würde.
+
+Zugangsdaten kommen auch hier aus `~/.claude/wbw-vergleichsfahrzeuge.env` — die
+liegt ausserhalb des Plugins und überlebt jedes Update.
+
 ### Aus dem Repo statt als Plugin
 
 Zum Weiterentwickeln reicht ein Klon; `.env` im Repo-Wurzelverzeichnis wird dann
