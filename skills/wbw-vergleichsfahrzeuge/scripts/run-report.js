@@ -39,19 +39,26 @@ function loadProtokoll(file, quelle) {
 
 function tryPdf(htmlPath, pdfPath) {
   const candidates = [
+    // Ausdrücklich gesetzter Pfad gewinnt (z. B. Container ohne System-Chrome).
+    process.env.WBW_CHROME, process.env.CHROME_PATH, process.env.PUPPETEER_EXECUTABLE_PATH,
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     "google-chrome", "chromium", "chromium-browser",
   ];
   const fileUrl = "file://" + encodeURI(path.resolve(htmlPath));
-  for (const bin of candidates) {
-    try {
-      execFileSync(bin, ["--headless=new", "--disable-gpu", "--no-pdf-header-footer",
-        `--print-to-pdf=${path.resolve(pdfPath)}`, "--virtual-time-budget=20000", fileUrl],
-        { stdio: "ignore", timeout: 90000 });
-      if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 8000) return bin;
-    } catch { /* nächster Kandidat */ }
+  const basis = ["--headless=new", "--disable-gpu", "--no-pdf-header-footer",
+    `--print-to-pdf=${path.resolve(pdfPath)}`, "--virtual-time-budget=20000"];
+  // Zweiter Versuch mit --no-sandbox: Chromium verweigert den Start als root
+  // (Container/CI). Auf einem normalen Arbeitsplatz greift schon der erste Versuch,
+  // dort wird die Sandbox also NICHT abgeschaltet.
+  for (const bin of candidates.filter(Boolean)) {
+    for (const extra of [[], ["--no-sandbox"]]) {
+      try {
+        execFileSync(bin, [...basis, ...extra, fileUrl], { stdio: "ignore", timeout: 90000 });
+        if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 8000) return bin + (extra.length ? " (--no-sandbox)" : "");
+      } catch { /* nächste Variante */ }
+    }
   }
   return null;
 }

@@ -131,25 +131,38 @@ async function holen(eingaben, opts = {}) {
   const abrufe = [];
   let items = [];
   let gesamt = null;
+  let unvollstaendig = false;
 
   for (let seite = 1; seite <= maxSeiten; seite++) {
     if (seite > 1) await pauseFn();
     const url = bauSuchUrl(eingaben, seite);
     const t0 = Date.now();
-    const r = await holeFn(url, { headers: BROWSER_HEADERS });
-    abrufe.push({ url, status: r.status, ms: Date.now() - t0, zeitpunkt: new Date().toISOString() });
-    if (r.status !== 200) throw new Error(`AutoScout24 antwortete HTTP ${r.status} auf Seite ${seite}`);
-    const next = findeNextData(r.body);
-    if (!next) throw new Error(`AutoScout24: __NEXT_DATA__ nicht gefunden (Seite ${seite}) — Seitenaufbau geändert?`);
+    let r, next, ls;
+    try {
+      r = await holeFn(url, { headers: BROWSER_HEADERS });
+      abrufe.push({ url, status: r.status, ms: Date.now() - t0, zeitpunkt: new Date().toISOString() });
+      if (r.status !== 200) throw new Error(`AutoScout24 antwortete HTTP ${r.status} auf Seite ${seite}`);
+      next = findeNextData(r.body);
+      if (!next) throw new Error(`AutoScout24: __NEXT_DATA__ nicht gefunden (Seite ${seite}) — Seitenaufbau geändert?`);
+      ls = findeListings(next);
+    } catch (err) {
+      // Teilerfolg: Was schon geholt ist, bleibt erhalten. Ein Gutachten mit 20
+      // statt 60 Fahrzeugen ist brauchbar - es muss nur dranstehen.
+      if (items.length) {
+        warnungen.push(`Beschaffung unvollständig: Seite ${seite} scheiterte (${err.message}). ${items.length} Treffer aus den vorherigen Seiten bleiben erhalten.`);
+        unvollstaendig = true;
+        break;
+      }
+      throw err;  // schon die erste Seite scheitert -> Stufe ist gescheitert
+    }
     if (gesamt == null) gesamt = gesamtTreffer(next);
-    const ls = findeListings(next);
     if (!ls.length) break;
     for (const l of ls) { const f = mappe(l, warnungen); if (f) items.push(f); }
     if (items.length >= maxItems) break;
   }
 
   items = dedupe(items).slice(0, maxItems);
-  return { items, protokoll: { abrufe, gesamtTrefferLautPortal: gesamt, warnungen } };
+  return { items, protokoll: { abrufe, gesamtTrefferLautPortal: gesamt, unvollstaendig, warnungen } };
 }
 
 module.exports = { holen, bauSuchUrl, mappe, findeListings, findeNextData, gesamtTreffer, BASIS, QUELLE };

@@ -38,6 +38,7 @@ async function main() {
   const portale = process.argv[3] ? [process.argv[3]] : Object.keys(providers.portale);
 
   let ok = true;
+  const mediane = {};
   for (const portal of portale) {
     const aktive = providers.portale[portal].stufen.filter((s) => s.enabled);
     console.log(`\n=== ${portal} === (aktive kostenfreie Stufen: ${aktive.map((s) => s.id).join(", ") || "keine"})`);
@@ -61,7 +62,46 @@ async function main() {
     }
     const ohneGps = it.filter((x) => x.lat == null).length;
     if (ohneGps) console.log(`       ohne Koordinaten: ${ohneGps}/${it.length} — werden per PLZ geocodiert, Rest weist der Report separat aus`);
+
+    // --- Plausibilitätsband ---------------------------------------------------
+    // Vollständigkeit allein reicht nicht: ein Mapping, das versehentlich auf die
+    // Monatsrate statt auf den Kaufpreis zeigt, liefert 100 % und ruiniert den WBW.
+    const ausreisser = [];
+    for (const x of it) {
+      if (x.preis != null && (x.preis < 300 || x.preis > 250000)) ausreisser.push(`Preis ${x.preis} (${x.url || x.id})`);
+      if (x.kilometerstand != null && (x.kilometerstand < 0 || x.kilometerstand > 800000)) ausreisser.push(`km ${x.kilometerstand} (${x.url || x.id})`);
+      const j = x.erstzulassung ? Number(String(x.erstzulassung).slice(-4)) : null;
+      if (j != null && (j < 1950 || j > new Date().getFullYear())) ausreisser.push(`EZ ${x.erstzulassung} (${x.url || x.id})`);
+    }
+    if (ausreisser.length) {
+      ok = false;
+      console.log(`  AUSREISSER (${ausreisser.length}) — Mapping zeigt vermutlich auf ein falsches Feld:`);
+      for (const a of ausreisser.slice(0, 5)) console.log(`       ${a}`);
+    } else {
+      console.log("  OK   Plausibilitätsband  keine Ausreißer bei Preis/km/EZ");
+    }
+    const preise = it.map((x) => x.preis).filter((p) => p != null).sort((a, b) => a - b);
+    if (preise.length) {
+      const med = preise[Math.floor(preise.length / 2)];
+      mediane[portal] = med;
+      console.log(`       Medianpreis      ${med} EUR`);
+    }
   }
+  // Der schärfste Test: weicht ein Portal im Medianpreis um Faktor 5 ab, zeigt
+  // sein Mapping auf ein anderes Feld. Das fällt bei keiner Vollständigkeitsmessung auf.
+  const werte = Object.entries(mediane);
+  if (werte.length >= 2) {
+    const min = Math.min(...werte.map(([, v]) => v));
+    const max = Math.max(...werte.map(([, v]) => v));
+    console.log(`\nMedianpreise: ${werte.map(([k, v]) => `${k} ${v} EUR`).join(" · ")}`);
+    if (max / min > 5) {
+      ok = false;
+      console.log(`  ABWEICHUNG Faktor ${(max / min).toFixed(1)} — ein Mapping zeigt vermutlich auf das falsche Feld.`);
+    } else {
+      console.log(`  OK   Größenordnung stimmt überein (Faktor ${(max / min).toFixed(2)}).`);
+    }
+  }
+
   console.log(`\n${ok ? "ERGEBNIS: alle Schwellen gehalten." : "ERGEBNIS: mindestens eine Schwelle gerissen — Mapping prüfen, NICHT die Schwelle senken."}`);
   process.exit(ok ? 0 : 1);
 }

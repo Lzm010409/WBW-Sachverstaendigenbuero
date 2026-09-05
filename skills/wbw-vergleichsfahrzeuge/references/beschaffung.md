@@ -86,6 +86,46 @@ Dienstes bestätigt: `get_location()` gibt nur `zip`, `city`, `state` zurück). 
 Fahrzeuge werden über die PLZ geocodiert; was dabei übrig bleibt, weist der Report
 separat als „ohne Koordinaten" aus, statt es still zu verwerfen.
 
+## Geocoding — tragend, und mit einer Fußangel
+
+Weder die AutoScout24-Trefferliste noch der Kleinanzeigen-Dienst liefern
+Koordinaten. Der komplette Umkreisbezug hängt damit an `geocode.js`.
+
+**Befund:** `api.zippopotam.us` liefert für ganze PLZ-Regionen **verschobene
+Datensätze**: `latitude` enthält dann den Gemeindeschlüssel (z. B. `"05113"` für
+Essen), `longitude` die tatsächliche Breite, die Länge fehlt ganz. Betroffen sind
+unter anderem **42xxx, 45xxx, 50xxx, 51xxx, 65xxx** — also ausgerechnet der
+Rhein-Ruhr-Raum und damit der Heimatmarkt des Büros. Auch `47798` (Krefeld) war
+betroffen. Die Plausibilitätsprüfung in `geocode.js` verwirft solche Sätze zu
+Recht; in einem Messlauf landeten dadurch **13 von 57 Fahrzeugen (23 %)** in
+„ohne Koordinaten" und fielen aus dem Umkreisfilter.
+
+**Behoben** durch eine zweite Quelle: schlägt zippopotam fehl, fragt `geocode.js`
+**Nominatim (OpenStreetMap)** — sequenziell, mit ≥ 1 s Abstand und
+aussagekräftigem User-Agent (deren Nutzungsregeln). Danach: 57 von 57 verortet.
+Als letzter Rückfall bleibt die 2-stellige PLZ-Region aus `geo-filter.js`
+(markiert als `_geoApprox`).
+
+Ein Nachbar-PLZ-Suchlauf wurde geprüft und **verworfen**: ganze Regionen sind
+betroffen, nicht einzelne PLZ — von 23 Nachbarabfragen war genau eine brauchbar.
+
+## Kleinanzeigen-Umkreis ohne Standort-ID
+
+Ohne Ortsbezug sucht Kleinanzeigen **bundesweit**; im ersten Messlauf blieben
+von 28 Treffern nur 2 im 200-km-Umkreis. Der Ortsteil im Pfad
+(`/s-autos/krefeld/c216…`) wird **ignoriert** — gegengeprüft: identische Treffer
+mit und ohne.
+
+Wirksam sind dagegen die Query-Parameter **`locationStr` + `radius`**, und
+`locationStr` nimmt **PLZ oder Ortsname**. An echten Antworten verifiziert: mit
+`locationStr=47798&radius=200` verschiebt sich die PLZ-Verteilung der Treffer
+deutlich in den Umkreis (50/51/41/56/54 statt 86/29/84/79). `bauSuchUrl()` setzt
+die Parameter deshalb automatisch aus `params.plz` und `params.radiusKm`.
+
+Ist zusätzlich `params.kleinanzeigenLocId` gesetzt, wird die genauere Pfadform
+`c216l<id>r<radius>` verwendet. Die ID wird **nicht geraten** — sie steht in der
+Adresszeile einer Kleinanzeigen-Ortssuche im Browser.
+
 ### Bright Data (L2) — verdrahtet, nicht aktiv
 
 Der Adapter `adapters/unlocker.js` ist vollständig implementiert und steht auf

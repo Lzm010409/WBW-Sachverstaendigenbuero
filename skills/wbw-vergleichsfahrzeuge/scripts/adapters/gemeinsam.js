@@ -216,7 +216,7 @@ function leeresFahrzeug(quelle) {
 }
 
 module.exports = {
-  BROWSER_HEADERS, PAUSE_MS, pause,
+  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent,
   zahl, ez, plz, ausstattung,
   hole, holeJson, dedupe, leeresFahrzeug,
 };

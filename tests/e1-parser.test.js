@@ -145,11 +145,26 @@ test("Kleinanzeigen bauSuchUrl() — Filter stehen im Pfad", () => {
   assert.equal(u, "https://www.kleinanzeigen.de/s-autos/c216+autos.marke_s:volkswagen+autos.model_s:golf+autos.ez_i:2017,2019+autos.km_i:70000,120000");
 });
 
-test("Kleinanzeigen bauSuchUrl() — ohne Standort-ID kein geratener Radius", () => {
+test("Kleinanzeigen bauSuchUrl() — Umkreis über locationStr, wenn eine PLZ vorliegt", () => {
+  // An einer echten Antwort verifiziert: locationStr nimmt PLZ oder Ortsnamen;
+  // ohne diese Parameter sucht Kleinanzeigen bundesweit.
+  const u = ka.bauSuchUrl({ kleinanzeigen: { car_make: "fiat" }, _abgeleitet: { plz: "47798", radius: 200 } });
+  assert.ok(u.includes("locationStr=47798"), u);
+  assert.ok(u.includes("radius=200"), u);
+});
+
+test("Kleinanzeigen bauSuchUrl() — ohne PLZ und ohne Standort-ID wird nichts geraten", () => {
   const u = ka.bauSuchUrl({ kleinanzeigen: { car_make: "audi" }, _abgeleitet: { radius: 200 } });
-  assert.ok(!/l\d+r\d+/.test(u), `kein Radius ohne Standort-ID: ${u}`);
-  const v = ka.bauSuchUrl({ kleinanzeigen: { car_make: "audi" }, _abgeleitet: { kleinanzeigenLocId: 3331, radius: 150 } });
+  assert.ok(!/l\d+r\d+/.test(u), `keine erfundene Standort-ID: ${u}`);
+  assert.ok(!u.includes("locationStr"), `ohne PLZ kein Ortsbezug: ${u}`);
+  assert.ok(!u.includes("?"), u);
+});
+
+test("Kleinanzeigen bauSuchUrl() — numerische Standort-ID hat Vorrang", () => {
+  const v = ka.bauSuchUrl({ kleinanzeigen: { car_make: "audi" },
+    _abgeleitet: { kleinanzeigenLocId: 3331, radius: 150, plz: "47798" } });
   assert.ok(v.includes("c216l3331r150"), v);
+  assert.ok(!v.includes("locationStr"), "die genauere Pfadform gewinnt");
 });
 
 test("Kleinanzeigen leistungKw() — PS wird umgerechnet, kW nicht", () => {

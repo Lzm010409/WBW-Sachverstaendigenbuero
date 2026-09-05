@@ -30,10 +30,14 @@ function pfade(o, praefix = "", tiefe = 0, out = new Set()) {
   return out;
 }
 
+// Nicht vergleichen: die eigene Herkunftsnotiz in der Fixture und alles unter
+// `seller`, weil die Fixtures dort anonymisiert sind. Beides wären Fehlalarme.
+const IGNORIEREN = (x) => x === "_herkunft" || /(^|\.)seller(\.|$)/.test(x);
+
 function vergleiche(name, fixtureObj, liveObj) {
   const f = pfade(fixtureObj), l = pfade(liveObj);
-  const fehlt = [...f].filter((x) => !l.has(x));
-  const neu = [...l].filter((x) => !f.has(x));
+  const fehlt = [...f].filter((x) => !l.has(x) && !IGNORIEREN(x));
+  const neu = [...l].filter((x) => !f.has(x) && !IGNORIEREN(x));
   console.log(`\n--- ${name} ---`);
   console.log(`  Fixture: ${f.size} Pfade · Live: ${l.size} Pfade`);
   if (fehlt.length) {
@@ -74,7 +78,13 @@ async function main() {
 
   // ---- AutoScout24 ----
   try {
-    const url = as24.bauSuchUrl({ autoScout: { make: "volkswagen", model: "golf" }, _abgeleitet: {} });
+    // Dieselben Suchparameter wie bei der Fixture-Aufnahme: mit PLZ-Umkreis liefert
+    // AutoScout24 zusätzlich location.distanceToSearchLocationInKm — ohne PLZ fehlte
+    // das Feld und würde fälschlich als Strukturänderung gemeldet.
+    const url = as24.bauSuchUrl({
+      autoScout: { make: "volkswagen", model: "golf", yearFrom: 2017, yearTo: 2019, mileageTo: 150000 },
+      _abgeleitet: { plz: "47798", radius: 200 },
+    });
     const r = await hole(url, { headers: BROWSER_HEADERS });
     if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
     const live = as24.findeListings(as24.findeNextData(r.body))[0];

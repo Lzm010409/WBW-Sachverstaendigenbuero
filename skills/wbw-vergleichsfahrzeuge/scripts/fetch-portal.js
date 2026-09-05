@@ -20,6 +20,42 @@
 const fs = require("fs");
 const path = require("path");
 
+/**
+ * Mindestqualität, damit eine Stufe als erfolgreich gilt. Der realistische
+ * Portalumbau liefert nicht NICHTS, sondern 25 Objekte mit lauter null-Feldern.
+ * Ohne diese Hürde bräche die Kette dort ab und lieferte Datenmüll, ohne dass
+ * eine Stufe "scheitert". Bewusst niedriger als die E4-Schwelle: das hier fängt
+ * den Totalausfall ab, es bewertet nicht die Qualität.
+ */
+const MINDEST_BRAUCHBAR = 0.5;
+
+/**
+ * URLs fürs Protokoll entschärfen. Das Protokoll wandert in den Report und damit
+ * ins Gutachten-PDF — ein Token im Query-String verließe damit das Haus.
+ * Benutzerinfo raus, verdächtig benannte Parameter redigiert; die fachlichen
+ * Suchparameter bleiben stehen, weil sie im Gutachten dokumentieren, WAS gesucht wurde.
+ */
+const GEHEIM = /^(token|key|apikey|api_key|access_token|auth|authorization|password|passwd|pass|secret|signature|sig)$/i;
+function sauberUrl(u) {
+  try {
+    const x = new URL(String(u));
+    x.username = ""; x.password = "";
+    for (const k of [...x.searchParams.keys()]) if (GEHEIM.test(k)) x.searchParams.set(k, "REDIGIERT");
+    return x.toString();
+  } catch { return String(u).replace(/([?&](?:token|key|apikey|api_key|access_token|auth|password|secret)=)[^&#]*/gi, "$1REDIGIERT"); }
+}
+function saubereProtokollDaten(o, tiefe = 0) {
+  if (o == null || tiefe > 8) return o;
+  if (typeof o === "string") return /^https?:\/\//.test(o) ? sauberUrl(o) : o;
+  if (Array.isArray(o)) return o.map((x) => saubereProtokollDaten(x, tiefe + 1));
+  if (typeof o === "object") {
+    const r = {};
+    for (const [k, v] of Object.entries(o)) r[k] = saubereProtokollDaten(v, tiefe + 1);
+    return r;
+  }
+  return o;
+}
+
 const ADAPTER = {
   autoscout24: () => require("./adapters/autoscout24.js"),
   kleinanzeigen: () => require("./adapters/kleinanzeigen.js"),
@@ -30,7 +66,22 @@ const ADAPTER = {
 
 function ladeProviders(datei) {
   const p = datei || path.join(__dirname, "providers.json");
-  return JSON.parse(fs.readFileSync(p, "utf8"));
+  let roh;
+  try { roh = fs.readFileSync(p, "utf8"); }
+  catch (e) { throw Object.assign(new Error(`providers.json nicht lesbar (${p}): ${e.message}`), { code: "PROVIDERS_DEFEKT" }); }
+  let j;
+  try { j = JSON.parse(roh); }
+  catch (e) { throw Object.assign(new Error(`providers.json ist kein gültiges JSON (${p}): ${e.message}`), { code: "PROVIDERS_DEFEKT" }); }
+  if (!j || typeof j.portale !== "object" || j.portale === null) {
+    throw Object.assign(new Error(`providers.json enthält kein Objekt "portale" (${p})`), { code: "PROVIDERS_DEFEKT" });
+  }
+  for (const [name, k] of Object.entries(j.portale)) {
+    if (!Array.isArray(k.stufen)) throw Object.assign(new Error(`providers.json: Portal "${name}" hat keine Stufenliste`), { code: "PROVIDERS_DEFEKT" });
+    for (const s of k.stufen) {
+      if (!s.id || !s.adapter) throw Object.assign(new Error(`providers.json: Portal "${name}" hat eine Stufe ohne id/adapter`), { code: "PROVIDERS_DEFEKT" });
+    }
+  }
+  return j;
 }
 
 /** Bricht eine Stufe ab, wenn sie zu lange braucht — blockiert nie endlos. */
@@ -102,15 +153,26 @@ async function beschaffe(portal, eingaben, opts = {}) {
         ergebnis = await mitZeitgrenze(mod.holen(eingaben, stufenOpts), opts.stufenZeitgrenzeMs, `${portal}/${stufe.id}`);
       }
       const n = (ergebnis && ergebnis.items) ? ergebnis.items.length : 0;
+      const details = saubereProtokollDaten((ergebnis && ergebnis.protokoll) || null);
       if (n === 0) {
         // Leer ist KEIN Erfolg — die nächste Stufe wird versucht.
-        versuche.push({ stufe: stufe.id, adapter: stufe.adapter, ergebnis: "leer", treffer: 0, ms: Date.now() - t0, zeitpunkt: new Date().toISOString(), details: (ergebnis && ergebnis.protokoll) || null });
+        versuche.push({ stufe: stufe.id, adapter: stufe.adapter, ergebnis: "leer", treffer: 0, ms: Date.now() - t0, zeitpunkt: new Date().toISOString(), details });
         log(`   ${stufe.id} lieferte 0 Treffer — nächste Stufe`);
+        continue;
+      }
+      const brauchbar = ergebnis.items.filter((x) => x && x.preis != null && x.kilometerstand != null).length / n;
+      if (brauchbar < MINDEST_BRAUCHBAR) {
+        // Treffer da, aber Pflichtfelder leer -> Mapping passt nicht mehr zur Quelle.
+        versuche.push({ stufe: stufe.id, adapter: stufe.adapter, ergebnis: "unbrauchbar", treffer: n,
+          anteilBrauchbar: Number(brauchbar.toFixed(3)), ms: Date.now() - t0, zeitpunkt: new Date().toISOString(), details });
+        log(`   ${stufe.id} lieferte ${n} Treffer, aber nur ${(brauchbar * 100).toFixed(0)} % mit Preis UND Kilometerstand — nächste Stufe`);
         continue;
       }
       items = ergebnis.items;
       getrageneStufe = stufe.id;
-      versuche.push({ stufe: stufe.id, adapter: stufe.adapter, ergebnis: "erfolg", treffer: n, ms: Date.now() - t0, zeitpunkt: new Date().toISOString(), kostenpflichtig: !!stufe.kostenpflichtig, details: ergebnis.protokoll || null });
+      versuche.push({ stufe: stufe.id, adapter: stufe.adapter, ergebnis: "erfolg", treffer: n,
+        anteilBrauchbar: Number(brauchbar.toFixed(3)), ms: Date.now() - t0, zeitpunkt: new Date().toISOString(),
+        kostenpflichtig: !!stufe.kostenpflichtig, details });
       log(`   ${stufe.id} lieferte ${n} Treffer`);
       break; // spätere Stufen bewusst NICHT mehr aufrufen
     } catch (err) {
@@ -155,7 +217,7 @@ async function main() {
       stufenZeitgrenzeMs: Number(process.env.WBW_STUFEN_TIMEOUT_MS || 900000),
     });
   } catch (err) {
-    if (err.code === "UNBEKANNTES_PORTAL" || err.code === "EINGABEBLOCK_FEHLT") {
+    if (err.code === "UNBEKANNTES_PORTAL" || err.code === "EINGABEBLOCK_FEHLT" || err.code === "PROVIDERS_DEFEKT") {
       console.error(`Fehler: ${err.message}`);
       process.exit(2);
     }
@@ -174,4 +236,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error("Unerwarteter Fehler:", e.message); process.exit(1); });
-module.exports = { beschaffe, ladeProviders, ADAPTER };
+module.exports = { beschaffe, ladeProviders, ADAPTER, sauberUrl, saubereProtokollDaten, MINDEST_BRAUCHBAR };

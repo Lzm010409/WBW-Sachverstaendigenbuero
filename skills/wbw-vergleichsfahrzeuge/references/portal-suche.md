@@ -1,5 +1,17 @@
 # Portal-Suche: Apify-Actors & Such-Eingaben
 
+> **Gilt seit der Adapterschicht nur noch für Stufe L3 (Apify).** Die Beschaffung
+> läuft standardmäßig über `scripts/fetch-portal.js` und die Eskalationskette —
+> siehe **`beschaffung.md`**. Die Filter-Ableitung unten (EZ-Jahre, km-Spanne,
+> Umkreis, Marke/Modell) gilt unverändert für alle Stufen; die Actor-spezifischen
+> Abschnitte beschreiben ausschließlich L3.
+>
+> **Zwei Aussagen dieser Datei treffen auf die Adapterschicht NICHT zu:**
+> - „Alle drei Portale liefern GPS-Koordinaten" gilt nur für die Apify-Actors.
+>   Über L0/L1 liefert **weder AutoScout24 noch Kleinanzeigen** Koordinaten.
+> - „Geocoding meist No-op" gilt entsprechend nicht mehr: über L0/L1 ist
+>   `geocode.js` der **einzige** Weg zum Umkreisbezug und damit tragend.
+
 Die Such-Eingaben werden **deterministisch** von `scripts/build-search-urls.js` aus
 `params.json` erzeugt (→ `search-inputs.json`). Claude baut keine URLs „frei Hand".
 Diese Datei dokumentiert, wie die Eingaben zustande kommen und was bei Sonderfällen
@@ -49,12 +61,15 @@ Strukturierte Eingabe: `make`/`model` als URL-Slug (`volkswagen`/`tiguan`),
 > wird über die mitgelieferten GPS-Koordinaten in `pipeline.js` gefiltert. Liegen zu
 > wenige Treffer im Umkreis, `maxItemsProPortal` erhöhen (Kosten sind gering).
 
-## Geocoding (`geocode.js`) — meist No-op
+## Geocoding (`geocode.js`)
 
-Seit der Umstellung liefern mobile.de & AutoScout24 echte Koordinaten, daher ist der
-Geocoding-Schritt i. d. R. wirkungslos (0/0). Er bleibt als **Sicherheitsnetz**: füllt
-Koordinaten aus einer PLZ nach (zippopotam.us, Plausibilitätscheck + Rückfall auf die
-2-stellige PLZ-Region), falls ein Actor doch einmal nur eine PLZ liefert.
+**Über L3/Apify** liefern mobile.de & AutoScout24 echte Koordinaten, der Schritt ist
+dann weitgehend wirkungslos.
+
+**Über L0/L1 ist er tragend:** weder die AutoScout24-Trefferliste noch der
+Kleinanzeigen-Dienst geben Koordinaten heraus, nur PLZ und Ort. Ohne Geocoding
+fiele der komplette Korb aus dem Umkreisfilter. Details und der zippopotam-Defekt
+stehen in `beschaffung.md`.
 
 ## Kleinanzeigen — `fatihtahta/ebay-kleinanzeigen-scraper`
 

@@ -49,11 +49,21 @@ function bauSuchUrl(eingaben) {
   if (k.min_mileage != null && k.max_mileage != null) {
     teile.push(`autos.km_i:${k.min_mileage},${k.max_mileage}`);
   }
-  // Umkreis nur, wenn eine Kleinanzeigen-Standort-ID vorliegt (params.kleinanzeigenLocId).
-  // Ohne ID KEINEN Radius raten — der Umkreis wird dann per GPS in pipeline.js gezogen.
+  // Umkreis: Kleinanzeigen akzeptiert `locationStr` (PLZ ODER Ortsname) zusammen
+  // mit `radius` als Query-Parameter - an einer echten Antwort verifiziert: mit
+  // locationStr=47798&radius=200 verschiebt sich die PLZ-Verteilung der Treffer
+  // deutlich in den Umkreis, ohne die Parameter ist die Suche bundesweit.
+  // Ist zusätzlich eine numerische Standort-ID hinterlegt, wird die genauere
+  // Pfadform `c216l<id>r<radius>` verwendet. Ohne beides wird NICHTS geraten.
   const loc = abg.kleinanzeigenLocId;
-  const kopf = loc ? `${teile[0]}l${loc}r${abg.radius ?? 200}` : teile[0];
-  return `${PORTAL}/s-autos/${[kopf, ...teile.slice(1)].join("+")}`;
+  const radius = abg.radius ?? 200;
+  const kopf = loc ? `${teile[0]}l${loc}r${radius}` : teile[0];
+  const pfad = `${PORTAL}/s-autos/${[kopf, ...teile.slice(1)].join("+")}`;
+  if (!loc && abg.plz) {
+    const q = new URLSearchParams({ locationStr: String(abg.plz), radius: String(radius) });
+    return `${pfad}?${q.toString()}`;
+  }
+  return pfad;
 }
 
 /** results[] aus der Dienstantwort. Leer statt Absturz. */
