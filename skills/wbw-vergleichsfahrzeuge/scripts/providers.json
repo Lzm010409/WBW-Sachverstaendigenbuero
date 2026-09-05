@@ -1,0 +1,85 @@
+{
+  "_hinweis": "Eskalationskette je Portal. Die Stufen werden in dieser Reihenfolge versucht; die erste, die Treffer liefert, gewinnt. Leeres Ergebnis gilt NICHT als Erfolg. Jede hier eingetragene URL/Actor-ID stammt aus einer echten, gesehenen Antwort - nichts ist geraten. Begruendungen fuer deaktivierte Stufen stehen im Feld 'grund'.",
+  "_stufen": {
+    "L0": "direkter Abruf beim Portal, kostenlos",
+    "L1": "eigener Dienst auf der Infrastruktur des Bueros, kostenlos",
+    "L2": "Bright Data Web Unlocker, Free Tier 5.000 Requests/Monat",
+    "L3": "Apify, kostenpflichtig - letzte Rueckfallebene"
+  },
+  "portale": {
+    "mobile.de": {
+      "inputKey": "mobileDe",
+      "stufen": [
+        {
+          "id": "L0",
+          "adapter": "mobilede",
+          "enabled": false,
+          "endpoint": null,
+          "grund": "Akamai Bot Manager blockt den direkten Abruf: schlanker Headersatz -> HTTP 403 (server: AkamaiGHost), vollstaendiger Browser-Headersatz -> HTTP 200 mit JS-Challenge, echter Chromium ueber die Egress-Infrastruktur nur mit TLS 1.2 -> harter 403. Kein unauthentifizierter JSON-/BFF-Endpunkt ermittelt. Bewusst kein geratener Endpunkt eingetragen."
+        },
+        {
+          "id": "L2",
+          "adapter": "unlocker",
+          "ueberPortal": "mobilede",
+          "enabled": false,
+          "grund": "Kein Bright-Data-Konto vorhanden. Adapter ist verdrahtet, aber nicht live verifiziert. Bei vorhandenem BRIGHTDATA_TOKEN auf true setzen und einmal gegen eine echte Antwort pruefen."
+        },
+        {
+          "id": "L3",
+          "adapter": "apify",
+          "enabled": true,
+          "actor": "blackfalcondata/mobile-de-scraper",
+          "maxTotalChargeUsd": 0.5,
+          "kostenpflichtig": true
+        }
+      ]
+    },
+    "autoscout24": {
+      "inputKey": "autoScout",
+      "stufen": [
+        {
+          "id": "L0",
+          "adapter": "autoscout24",
+          "enabled": true,
+          "endpoint": "https://www.autoscout24.de/lst/",
+          "beleg": "5 Abrufe in Folge mit 2 s Pause: alle HTTP 200, keine Blockade. Trefferliste als JSON in <script id=\"__NEXT_DATA__\"> unter props.pageProps.listings[]. Filter fregfrom/fregto, kmto, zip/zipr und page nachweislich wirksam."
+        },
+        {
+          "id": "L2",
+          "adapter": "unlocker",
+          "ueberPortal": "autoscout24",
+          "enabled": false,
+          "grund": "Nicht noetig: L0 traegt reproduzierbar. Bleibt als Reserve verdrahtet, falls AutoScout24 spaeter blockt."
+        },
+        {
+          "id": "L3",
+          "adapter": "apify",
+          "enabled": true,
+          "actor": "blackfalcondata/autoscout24-scraper",
+          "maxTotalChargeUsd": 0.5,
+          "kostenpflichtig": true
+        }
+      ]
+    },
+    "kleinanzeigen": {
+      "inputKey": "kleinanzeigen",
+      "stufen": [
+        {
+          "id": "L1",
+          "adapter": "kleinanzeigen",
+          "enabled": true,
+          "endpointEnv": "KA_API_BASE",
+          "beleg": "Eigener Dienst auf Coolify (DanielWTE/ebay-kleinanzeigen-api, Commit da2fb02, unveraendert). POST /inserate-by-url liefert success:true; GET /inserat/{adid}?batch_id=... liefert Kilometerstand, Erstzulassung, Leistung, Getriebe, Kraftstoffart, Fahrzeugtyp, Anzahl Tueren. Direktzugriff auf kleinanzeigen.de aus fremden Netzen wird IP-gesperrt - deshalb der eigene Dienst."
+        },
+        {
+          "id": "L3",
+          "adapter": "apify",
+          "enabled": true,
+          "actor": "fatihtahta/ebay-kleinanzeigen-scraper",
+          "maxTotalChargeUsd": 0.5,
+          "kostenpflichtig": true
+        }
+      ]
+    }
+  }
+}

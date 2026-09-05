@@ -1,0 +1,16 @@
+{
+ "_herkunft": "Echte Antworten von mobile.de, abgerufen 2026-09-05. Dokumentiert, warum L0 deaktiviert ist.",
+ "schlankerHeadersatz": {
+  "status": 403,
+  "server": "AkamaiGHost",
+  "titel": "Zugriff verweigert / Access denied"
+ },
+ "vollerBrowserHeadersatz": {
+  "status": 200,
+  "rumpf": "Akamai-Bot-Manager-JS-Challenge (sec-if-cpt-container, sensor_data), ohne JS-Ausfuehrung nicht aufloesbar"
+ },
+ "echterChromiumTls12": {
+  "status": 403,
+  "hinweis": "Harter Block statt Challenge - TLS-1.2-Fingerabdruck passt nicht zu Chrome 131"
+ }
+}

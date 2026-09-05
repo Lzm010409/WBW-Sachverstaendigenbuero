@@ -1,0 +1,57 @@
+{
+  "mobileDe": {
+    "query": "VW Golf",
+    "category": "CAR",
+    "yearMin": 2017,
+    "yearMax": 2019,
+    "mileageMin": 70000,
+    "mileageMax": 120000,
+    "zipCode": "47798",
+    "radiusKm": 200,
+    "maxResults": 60,
+    "includeDetails": true,
+    "sort": "relevance"
+  },
+  "autoScout": {
+    "make": "volkswagen",
+    "model": "golf",
+    "countries": [
+      "DE"
+    ],
+    "yearFrom": 2017,
+    "yearTo": 2019,
+    "mileageTo": 120000,
+    "maxResults": 60,
+    "includeDetails": true,
+    "proxyConfiguration": {
+      "useApifyProxy": true,
+      "apifyProxyGroups": [
+        "RESIDENTIAL"
+      ]
+    }
+  },
+  "kleinanzeigen": {
+    "queries": [
+      "VW Golf"
+    ],
+    "category": "216",
+    "car_make": "volkswagen",
+    "car_model": "Golf",
+    "min_first_registration_year": 2017,
+    "max_first_registration_year": 2019,
+    "min_mileage": 70000,
+    "max_mileage": 120000,
+    "enrich_data": true,
+    "limit": 60
+  },
+  "_abgeleitet": {
+    "jahr": 2018,
+    "fregfrom": 2017,
+    "fregto": 2019,
+    "kmfrom": 70000,
+    "kmto": 120000,
+    "plz": "47798",
+    "radius": 200,
+    "kleinanzeigenLocId": null
+  }
+}

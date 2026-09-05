@@ -1,0 +1,197 @@
+[
+ {
+  "success": true,
+  "time_taken": 6.378,
+  "data": {
+   "id": "3503810262",
+   "scraped_at": "2026-09-05T07:21:18+00:00",
+   "url_requested": "https://www.kleinanzeigen.de/s-anzeige/3503810262",
+   "url_redirected": "https://www.kleinanzeigen.de/s-anzeige/3503810262",
+   "categories": [
+    "Kleinanzeigen",
+    "Auto, Rad & Boot",
+    "Autos"
+   ],
+   "title": "Volkswagen up! Basis",
+   "status": "active",
+   "price": {
+    "amount": "10500",
+    "currency": "€",
+    "negotiable": false
+   },
+   "delivery": null,
+   "location": {
+    "zip": "97508",
+    "city": "Grettstadt",
+    "state": "Bayern"
+   },
+   "media": {
+    "images": {
+     "count": 13,
+     "urls": [
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/ce/ced96595-3366-4d33-9103-27c80a484015?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/3c/3c0aaf32-6291-495f-98eb-bd67095c0610?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/05/05802dce-bb1f-43dc-b321-54ea9cc15c52?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/b5/b52c9658-b3f3-4457-b22a-4e9d23aabe1f?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/ff/ff091697-afb9-4282-a5f9-ee13a2de0b6f?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/6d/6d290174-5689-4738-8115-57c134ba70bd?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/69/699f8c5d-cb88-405c-9f04-04abec339522?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/9b/9ba42292-1d99-4a8c-8f62-c2d5b21f90eb?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/b4/b442b706-c6d3-4cb6-bd3d-3e1b8492a788?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/f5/f58a8510-d2e9-401c-ba0b-10269053119c?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/52/524b3a02-5d1f-492d-a1aa-3a34d7b327c5?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/64/6429ddf2-4bee-48bb-a0cb-6e0c79df0c3b?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/53/537623d0-996e-431f-9aee-bac5da72000d?rule=$_59.AUTO"
+     ]
+    },
+    "videos": {
+     "count": 0,
+     "urls": []
+    },
+    "audios": {
+     "count": 0,
+     "urls": []
+    }
+   },
+   "details": {
+    "Marke": "Volkswagen",
+    "Modell": "up!",
+    "Kilometerstand": "42.536 km",
+    "Fahrzeugzustand": "Unbeschädigtes Fahrzeug",
+    "Erstzulassung": "Oktober 2022",
+    "Kraftstoffart": "Benzin",
+    "Leistung": "65 PS",
+    "Getriebe": "Manuell",
+    "Fahrzeugtyp": "Kleinwagen",
+    "Anzahl Türen": "2/3",
+    "Außenfarbe": "Weiß",
+    "Material Innenausstattung": "Stoff"
+   },
+   "features": [
+    "Einparkhilfe",
+    "Klimaanlage",
+    "Radio/Tuner",
+    "Bluetooth",
+    "Freisprecheinrichtung",
+    "Sitzheizung",
+    "Tempomat",
+    "Antiblockiersystem (ABS)",
+    "Scheckheftgepflegt"
+   ],
+   "description": "Sonderausstattung:\nFahrassistenz-Paket, Einparkhilfe hinten, Sonderlackierung Pure-White uni, Außenspiegel elektr. verstell- und heizbar, Außenspiegel asphärisch, links, Sitzheizung vorn\nWeitere Ausstattung:\nAirbag Fahrer-/Beifahrerseite, Beifahrerairbag abschaltbar, Antriebs-Schlupfregelung (ASR), Audiosystem Composition Phone (Bluetooth, SD-Karten-Schnittstelle, AUX-IN), Außenspiegel Wagenfarbe, Bluetooth-Schnittstelle für Mobiltelefon, Chrom-Paket (1), Chromeinfassung Klimabedienung, Dachhimmel Stoff, grau, Drehzahlmesser, Einstiegshilfe Easy-Entry mit Memoryfunktion, Frontscheibe Verbundglas getönt, Funkschlüssel (2) klappbar, Gepäckraumabdeckung / Rollo, Gepäckraumbeleuchtung, Gepäckraumboden höhenverstellbar, Handschuhfach mit Klappe, Heckscheibe heizbar, Heckscheibenwischer, Innenausstattung: Dekor Black Cube, Innenspiegel abblendbar, Isofix-Aufnahmen für Kindersitz an Rücksitz, Karosserie: 2-türig, Kennzeichenbeleuchtung LED, Innenraumfilter: Staub- und Pollenfilter, Kopfstützen hinten, Lautsprecher (2), Lenkrad (3 Speichen), Lenksäule (Lenkrad) höhenverstellbar, Mobile Online Dienste VW Connect, Modellpflege (2), Motor 1,0 Ltr. - 48 kW, Motor-Schleppmoment-Regulator (MSR), Multifunktionsanzeige Plus, Multimedia-Schnittstelle USB, Nebelschlussleuchte, Nichtraucher-Paket, Radioempfang digital (DAB+), Radvollabdeckungen / Radzierblenden, Reifen-Reparaturkit (Tire Mobility Set), Rücksitzlehne geteilt, Schadstoffarm nach Abgasnorm Euro 6d, Scheibenwischer mit Intervallschaltung, Scheinwerfer Halogen H4, Seitenairbag vorn mit Kopf-Airbag-Einheit, Sitz vorn links höhenverstellbar, Sitzbezug / Polsterung: Stoff Fusion, Smartphone Halterung maps+more Dockingstation, Sonnenblende rechts mit Spiegel, Stabilisator vorn, Stahlfelgen 5x14, Start/Stop-Anlage, Stoßfänger lackiert, Türgriffe außen Wagenfarbe, Türgriffe innen verchromt, Verbandkasten und Warndreieck, Warnanlage für Sicherheitsgurte vorn und hinten, Wärmeschutzverglasung grün getönt (seitlich / hinten)\nKleinwagen\nGebrauchtfahrzeug\nHubraum: 999 cm³\nAnzahl der Türen: 2/3 Türen\nAnzahl Sitzplätze: 4\nSchadstoffklasse: --\nUmweltplakette: --\nAnzahl der Fahrzeughalter: 1\nHU: --\nFarbe: Weiß\nFarbe (Hersteller): PURE WHITE\nInnenausstattung: Stoff\nFarbe der Innenausstattung: Schwarz\nAirbags: Front-, Seiten- und weitere Airbags\nAnhängerkupplung: --\nRadio: Radio DAB\nTagfahrlicht (Art): Tagfahrlicht\nKurvenlicht (Art): Kurvenlicht\nAusstattung\nABS, Abgedunkelte Scheiben, Allwetterreifen, Bluetooth, Bordcomputer, ESP, Elektr. Fensterheber, Elektr. Seitenspiegel, Elektr. Wegfahrsperre, Freisprecheinrichtung, Isofix, Lederlenkrad, Nichtraucher-Fahrzeug, Notbremsassistent, Reifendruckkontrolle, Scheckheftgepflegt, Servolenkung, Sitzheizung, Start/Stopp-Automatik, Taxi, Traktionskontrolle, USB, Winterpaket, Zentralverriegelung\nInserat bereitgestellt von",
+   "seller": {
+    "type": "business",
+    "name": "ANONYMISIERT"
+   },
+   "extra_info": {
+    "created_at": "05.09.2026",
+    "views": "5"
+   }
+  },
+  "performance_metrics": {
+   "success_rate": 100,
+   "time_taken": 6.375
+  },
+  "_herkunft": "Echte Antwort von GET /inserat/3503810262?batch_id=... , abgerufen 2026-09-05. seller anonymisiert, Fahrzeugdaten unveraendert."
+ },
+ {
+  "success": true,
+  "time_taken": 6.436,
+  "data": {
+   "id": "3503812806",
+   "scraped_at": "2026-09-05T07:21:26+00:00",
+   "url_requested": "https://www.kleinanzeigen.de/s-anzeige/3503812806",
+   "url_redirected": "https://www.kleinanzeigen.de/s-anzeige/3503812806",
+   "categories": [
+    "Kleinanzeigen",
+    "Auto, Rad & Boot",
+    "Autos"
+   ],
+   "title": "Volkswagen Tiguan 2.0 TSI DSG 4MOTION SOUND SOUND",
+   "status": "active",
+   "price": {
+    "amount": "18900",
+    "currency": "€",
+    "negotiable": false
+   },
+   "delivery": null,
+   "location": {
+    "zip": "82383",
+    "city": "Hohenpeißenberg",
+    "state": "Bayern"
+   },
+   "media": {
+    "images": {
+     "count": 11,
+     "urls": [
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/74/74a9c72a-e66b-4cfa-a998-79d5fc688045?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/5f/5fc6bb1c-9698-452b-90bc-48cbab023753?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/f0/f0bf2ee8-2f35-441b-873f-1fb9fdcd96c4?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/86/86890125-89fa-45fd-a322-939e879b53a6?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/fa/facf725f-517b-4a41-be6c-50e0a99d43a0?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/df/df12b9fc-f868-444c-b79b-ed2db9646faa?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/31/313797bc-385c-4582-8e5c-6b829466bd64?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/ce/ce098ccc-3336-41d5-934a-823fbe9dcca5?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/7b/7b507ca5-53b9-43ce-84fc-21fc2d723565?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/cc/cc097988-9519-48d5-b38c-33a292c99003?rule=$_59.AUTO",
+      "https://img.kleinanzeigen.de/api/v1/prod-ads/images/e6/e6fcb40f-7a98-4261-9b55-bcc6cc3833ed?rule=$_59.AUTO"
+     ]
+    },
+    "videos": {
+     "count": 0,
+     "urls": []
+    },
+    "audios": {
+     "count": 0,
+     "urls": []
+    }
+   },
+   "details": {
+    "Marke": "Volkswagen",
+    "Modell": "Tiguan",
+    "Kilometerstand": "99.132 km",
+    "Fahrzeugzustand": "Unbeschädigtes Fahrzeug",
+    "Erstzulassung": "Juni 2017",
+    "Kraftstoffart": "Benzin",
+    "Leistung": "179 PS",
+    "Getriebe": "Automatik",
+    "Fahrzeugtyp": "SUV/Geländewagen",
+    "Anzahl Türen": "4/5",
+    "HU bis": "August 2028",
+    "Umweltplakette": "4 (Grün)",
+    "Schadstoffklasse": "Euro6",
+    "Außenfarbe": "Grau",
+    "Material Innenausstattung": "Stoff"
+   },
+   "features": [
+    "Anhängerkupplung",
+    "Einparkhilfe",
+    "Leichtmetallfelgen",
+    "Xenon-/LED-Scheinwerfer",
+    "Klimaanlage",
+    "Navigationssystem",
+    "Radio/Tuner",
+    "Bluetooth",
+    "Freisprecheinrichtung",
+    "Sitzheizung",
+    "Tempomat",
+    "Antiblockiersystem (ABS)",
+    "Scheckheftgepflegt"
+   ],
+   "description": "Zum Verkauf steht ein gepflegter VW Tiguan, Baujahr 2017, mit aktuell 99.132 km Laufleistung.\nDer Tiguan überzeugt durch sein modernes Design, hohen Fahrkomfort und viel Platz im Innenraum. Ein zuverlässiges und vielseitiges Fahrzeug, das sich sowohl für den Alltag als auch für längere Fahrten bestens eignet.\nHU/AU neu\nKundendienst Neu\nBremsen hinten Neu\nKleiner Kratzer an Frontstoßstange vorne rechts\nSUV/Geländewagen/Pickup\nGebrauchtfahrzeug\nUnfallfrei\nHubraum: 1984 cm³\nAnzahl der Türen: 4/5 Türen\nAnzahl Sitzplätze: 5\nSchadstoffklasse: Euro6\nUmweltplakette: 4 (Grün)\nAnzahl der Fahrzeughalter: 1\nHU: 8/2028\nFarbe: Grau Metallic\nFarbe (Hersteller): --\nInnenausstattung: Stoff\nFarbe der Innenausstattung: Schwarz\nAirbags: Front-, Seiten- und weitere Airbags\nAnhängerkupplung: Anhängerkupplung schwenkbar\nRadio: Tuner/Radio\nTagfahrlicht (Art): LED-Tagfahrlicht\nKurvenlicht (Art): Kurvenlicht\nPannenhilfe: Pannenkit\nAusstattung\nABS, Abstandswarner, Alarmanlage, Allradantrieb, Android Auto, Apple CarPlay, Armlehne, Berganfahrassistent, Bluetooth, Bordcomputer, CD-Spieler, Dachreling, ESP, Elektr. Fensterheber, Elektr. Heckklappe, Elektr. Seitenspiegel, Elektr. Wegfahrsperre, Fernlichtassistent, Freisprecheinrichtung, Geschwindigkeitsbegrenzer, Innenspiegel autom. abblendend, Isofix, Lederlenkrad, Leichtmetallfelgen, Lichtsensor, Lordosenstütze, Multifunktionslenkrad, Müdigkeitswarner, Navigationssystem, Nebelscheinwerfer, Notbremsassistent, Regensensor, Reifendruckkontrolle, Schaltwippen, Scheckheftgepflegt, Scheinwerferreinigung, Servolenkung, Sitzheizung, Sommerreifen, Spurhalteassistent, Start/Stopp-Automatik, Touchscreen, Traktionskontrolle, USB, WLAN / Wifi Hotspot, Winterreifen, Zentralverriegelung\nDer Preis ist Verhandlungsbasis.\nPrivatanbieter\n82383 Hohenpeißenberg\nDeutschland\nInserat bereitgestellt von",
+   "seller": {
+    "type": "private",
+    "name": "ANONYMISIERT"
+   },
+   "extra_info": {
+    "created_at": "05.09.2026",
+    "views": "1"
+   }
+  },
+  "performance_metrics": {
+   "success_rate": 100,
+   "time_taken": 6.435
+  },
+  "_herkunft": "Echte Antwort von GET /inserat/3503812806?batch_id=... , abgerufen 2026-09-05. seller anonymisiert, Fahrzeugdaten unveraendert."
+ }
+]

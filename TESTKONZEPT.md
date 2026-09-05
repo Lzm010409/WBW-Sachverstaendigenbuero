@@ -1,18 +1,56 @@
 # Testkonzept — Adapterschicht WBW-Vergleichsfahrzeuge
 
-Stand: 2026-09-05 · **Entwurf, vorgezogene Phase 1**
+Stand: 2026-09-05 · **umgesetzt**, Abweichungen unten benannt
 
-Dieses Konzept entsteht vor der Implementierung. Es ist dort vollständig, wo es
-ohne Netzzugang und ohne den Plugin-Quellcode vollständig sein kann. Zwei Stellen
-sind ausdrücklich offen und mit **[OFFEN]** markiert; sie zu schließen ist der
-erste Schritt der nächsten Session.
+Dieses Konzept entstand vor der Implementierung. Es beschreibt jetzt, was
+tatsächlich gebaut und ausgeführt wurde. Die beiden ursprünglich offenen Punkte
+sind geschlossen:
 
-**[OFFEN 1]** Die Kandidatenlisten von `scripts/normalize.js` sind unbekannt — die
-Datei lag nicht vor. Abschnitt 6 (Regression Altformat) kann erst danach konkret
-werden.
-**[OFFEN 2]** Der Testrunner-Bestand des Plugins ist unbekannt. Dieses Konzept
-geht von `node --test` aus (Begründung in Abschnitt 1). Bringt das Plugin bereits
-vitest oder jest mit, wird darauf aufgebaut statt etwas danebenzustellen.
+**[GESCHLOSSEN 1]** Die Kandidatenlisten von `scripts/normalize.js` liegen vor.
+Die kanonischen Adapter-Feldnamen wurden ans **Ende** jeder Liste gehängt; die
+Apify-Rohformate gewinnen weiterhin zuerst. Nachgewiesen in Abschnitt 6.
+
+**[GESCHLOSSEN 2]** Das Plugin bringt keinen Testrunner mit. Verwendet wird
+`node --test` (Begründung in Abschnitt 1) — es kommt also nichts neben etwas
+Bestehendes.
+
+## Was tatsächlich läuft
+
+| Datei | Ebene | Netz | Kosten |
+| --- | --- | --- | --- |
+| `tests/e1-parser.test.js` | E1 reine Funktionen | nein | keine |
+| `tests/e2-vertrag.test.js` | E2 Vertrag gegen echte Fixtures | nein | keine |
+| `tests/e2-altformat.test.js` | E2b Regression Apify-Altformat | nein | keine |
+| `tests/e3-eskalation.test.js` | E3 Eskalation + Fehlerinjektion | nein | keine |
+| `tests/e5-korb.test.js` | E5 Korb: ohne Koordinaten, Beschaffungsprotokoll im Report | nein | keine |
+| `tests/nf-nichtfunktional.test.js` | Ratenlimit, Kostensperre, Secrets, Idempotenz | nein | keine |
+| `tests/schema-waechter.js` | E2b Schema-Wächter | **ja** | keine |
+| `tests/e4-live.js` | E4 Live je Adapter | **ja** | keine (L3 ausgefiltert) |
+
+`npm test` führt genau diese fünf Offline-Dateien aus (65 Tests).
+
+## Abweichungen vom ursprünglichen Entwurf
+
+1. **Keine `<name>.meta.json`-Beistelldateien.** Herkunft, Abrufzeitpunkt und
+   Anonymisierungsumfang stehen stattdessen als `_herkunft` **in** der Fixture.
+   Grund: eine Beistelldatei kann verloren gehen oder veralten, ein Feld in der
+   Datei selbst nicht. Der Informationsgehalt ist derselbe.
+2. **Fixture-Namen** weichen ab: `autoscout24-suchseite.json` statt
+   `autoscout24-next-data.json`; zusätzlich `autoscout24-huelle.html`, um
+   `findeNextData()` gegen echtes HTML zu prüfen.
+3. **`mobilede-liste.json` gibt es nicht.** Stattdessen
+   `mobilede-akamai-block.json` mit den echten Sperrantworten. Es gibt keine
+   BFF-Antwort, weil kein Endpunkt ermittelt werden konnte — eine erfundene
+   Fixture wäre wertlos.
+4. **Secret-Regel im Protokoll geschärft statt pauschal.** Der Entwurf verlangte
+   „Host und Pfad, niemals den Query-String". Umgesetzt ist: Benutzerinfo wird
+   entfernt, Parameter mit verdächtigem Namen (`token`, `key`, `password`, …)
+   werden auf `REDIGIERT` gesetzt, **fachliche** Suchparameter bleiben stehen.
+   Grund: Für die gutachterliche Nachvollziehbarkeit ist es wesentlich, WELCHE
+   Suche gefahren wurde. Ein Test prüft, dass Token dabei nicht durchrutschen.
+5. **Idempotenz** wird offline über die Determiniertheit von `mappe()` geprüft
+   (gleiche Fixture → gleiches Ergebnis) statt über zwei Live-Läufe. Der
+   Trefferzahl-Vergleich ±20 % gehört zum Regressionslauf, nicht in `npm test`.
 
 ---
 
@@ -33,7 +71,7 @@ Aufbaus — **`npm test` darf niemals einen kostenpflichtigen Apify-Lauf auslös
 | `npm run test:schema` | Schema-Wächter (E2b) | ja | keine |
 | `npm run test:live` | E4 je Adapter, nur L0–L2 | ja | keine |
 | `npm run test:l3` | L3/Apify, einzeln, explizit | ja | **kostenpflichtig** |
-| `npm run test:e2e` | E5 Regression mit TESTFAHRZEUG | ja | ggf. L3 |
+| E5-Regression | vollständiger Skill-Durchlauf, von Hand gefahren | ja | nur mit `WBW_ALLOW_PAID=1` |
 
 Durchgesetzt wird das nicht durch Disziplin, sondern durch eine Sperre: Die
 L3-Adapter prüfen beim Laden `process.env.WBW_ALLOW_PAID === "1"` und werfen
@@ -263,20 +301,27 @@ Nicht passieren darf: deutlich weniger Treffer nach der Filterkette, oder
 systematisch leere Felder. Beides heißt kaputtes Mapping, und die Antwort darauf
 sind die Phasen 2–4, nicht weichere Toleranzen.
 
-**Kleinanzeigen ohne GPS** (in Abschnitt 3.3 der Übergabe aus der Quelle belegt):
+**Kleinanzeigen ohne GPS** (im Quellcode des Dienstes belegt, siehe `references/beschaffung.md`):
 Diese Fahrzeuge dürfen nicht still aus der Umkreisfilterung fallen. Ein eigener
 Test prüft, dass sie im Report separat ausgewiesen werden — nicht, dass sie
 irgendwie vorhanden sind, sondern dass sie in der dafür vorgesehenen Rubrik
 erscheinen.
 
-### Regression Altformat **[OFFEN 1]**
+### Regression Altformat — umgesetzt
 
-Die alten Apify-Rohdateien müssen weiterhin fehlerfrei durch `normalize.js`
-laufen, nachdem die kanonischen Adapterfelder in die Kandidatenlisten aufgenommen
-wurden. Test: alte Rohdatei rein, Feldbelegung vorher/nachher identisch.
+Nachgewiesen auf zwei Wegen:
 
-Konkretisierbar erst, wenn `normalize.js` und mindestens eine alte Rohdatei
-vorliegen.
+1. `tests/e2-altformat.test.js` prüft repräsentative Apify-Rohsätze aller drei
+   Actors gegen konkrete Erwartungswerte (`"110 kW (150 PS)"` → 110, nicht 150;
+   `"179 PS"` → 132 kW; `"Juni 2017"` → 2017,42; yams-proxy-Bild → direkte URL).
+2. Zusätzlich wurde die **alte** `normalize.js` gegen die **neue** auf denselben
+   Altdaten laufen gelassen: das Ergebnis ist `deepStrictEqual` identisch. Damit
+   ist belegt, dass die Ergänzung der Kandidatenlisten nichts verändert hat.
+
+Einschränkung, offen benannt: Im Repo lag **keine echte alte Rohdatei**. Der
+Datensatz in `tests/fixtures/apify-altformat.json` ist deshalb aus den
+Kandidatenlisten und `references/datenschema.md` gebaut und als synthetisch
+gekennzeichnet. Sobald ein echter L3-Lauf vorliegt, sollte er ihn ersetzen.
 
 ### Ratenlimit-Treue
 

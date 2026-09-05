@@ -1,4 +1,7 @@
 {
+  "env": {
+    "WBW_ALLOW_PAID": "1"
+  },
   "extraKnownMarketplaces": {
     "addy-agent-skills": {
       "source": {

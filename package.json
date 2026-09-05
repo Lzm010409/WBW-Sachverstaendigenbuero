@@ -1,0 +1,16 @@
+{
+  "name": "wbw-vergleichsfahrzeug-finder",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Plugin des Kfz-Sachverstaendigenbueros Gollenstede: WBW-Vergleichsfahrzeuge",
+  "scripts": {
+    "test": "node --test tests/e1-*.test.js tests/e3-*.test.js tests/e2-*.test.js tests/e5-*.test.js tests/nf-*.test.js",
+    "test:e1": "node --test tests/e1-*.test.js",
+    "test:e2": "node --test tests/e2-*.test.js",
+    "test:e3": "node --test tests/e3-*.test.js",
+    "test:schema": "node tests/schema-waechter.js",
+    "test:live": "node tests/e4-live.js",
+    "test:l3": "WBW_ALLOW_PAID=1 node tests/e5-regression.js --nur-l3",
+    "test:e5": "node --test tests/e5-*.test.js"
+  }
+}
