@@ -20,18 +20,33 @@ const { URL } = require("url");
 function ladeEnv(startVerzeichnis) {
   const fs = require("fs");
   const path = require("path");
-  const kandidaten = [];
-  if (process.env.WBW_ENV_DATEI) kandidaten.push(process.env.WBW_ENV_DATEI);
-  // Vom Arbeitsordner und vom Modulordner aus je bis zu 6 Ebenen aufwaerts suchen.
-  for (const start of [process.cwd(), startVerzeichnis || __dirname]) {
+  const os = require("os");
+  const aufwaerts = (start) => {
+    const out = [];
     let d = start;
     for (let i = 0; i < 6; i++) {
-      kandidaten.push(path.join(d, ".env"));
+      out.push(path.join(d, ".env"));
       const oben = path.dirname(d);
       if (oben === d) break;
       d = oben;
     }
-  }
+    return out;
+  };
+  const kandidaten = [
+    // 1. Ausdruecklich gesetzter Pfad gewinnt immer.
+    process.env.WBW_ENV_DATEI,
+    // 2. Arbeitsordner aufwaerts - die .env des konkreten Vorgangs/Repos.
+    ...aufwaerts(process.cwd()),
+    // 3. Fester Ort im Benutzerprofil. WICHTIG fuer installierte Plugins: der
+    //    Plugin-Cache wird bei jedem Update ersetzt, eine .env darin waere weg.
+    //    Diese Datei ueberlebt Updates und gilt fuer alle Vorgaenge.
+    path.join(os.homedir(), ".claude", "wbw-vergleichsfahrzeuge.env"),
+    // 4. Plugin-Wurzel (Entwicklung aus dem Repo heraus).
+    process.env.CLAUDE_PLUGIN_ROOT ? path.join(process.env.CLAUDE_PLUGIN_ROOT, ".env") : null,
+    // 5. Modulordner aufwaerts - Rueckfall, wenn aus dem Repo heraus gearbeitet wird.
+    ...aufwaerts(startVerzeichnis || __dirname),
+  ].filter(Boolean);
+
   for (const datei of kandidaten) {
     let roh;
     try { roh = fs.readFileSync(datei, "utf8"); } catch { continue; }
@@ -50,6 +65,11 @@ function ladeEnv(startVerzeichnis) {
     return datei;   // erste gefundene Datei gewinnt
   }
   return null;
+}
+
+/** Fester Ort fuer Zugangsdaten, der Plugin-Updates ueberlebt. */
+function globaleEnvDatei() {
+  return require("path").join(require("os").homedir(), ".claude", "wbw-vergleichsfahrzeuge.env");
 }
 
 /** Browser-Headersatz. Ohne diesen antwortet AutoScout24 mit 403. */
@@ -257,7 +277,7 @@ function leeresFahrzeug(quelle) {
 }
 
 module.exports = {
-  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv,
+  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv, globaleEnvDatei,
   zahl, ez, plz, ausstattung,
   hole, holeJson, dedupe, leeresFahrzeug,
 };

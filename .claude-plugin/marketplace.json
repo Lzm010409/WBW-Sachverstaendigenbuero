@@ -1,0 +1,16 @@
+{
+  "name": "wbw-gollenstede",
+  "description": "Plugins des Kfz-Sachverstaendigenbueros Gollenstede fuer die Gutachtenpraxis.",
+  "owner": {
+    "name": "Kfz-Sachverstaendigenbuero Gollenstede",
+    "url": "https://github.com/Lzm010409/WBW-Sachverstaendigenbuero"
+  },
+  "plugins": [
+    {
+      "name": "wbw-vergleichsfahrzeug-finder",
+      "source": "./",
+      "version": "0.2.0",
+      "description": "Recherchiert Vergleichsfahrzeuge zur Ermittlung des Wiederbeschaffungswerts (WBW) auf mobile.de, AutoScout24 und Kleinanzeigen ueber eine Eskalationskette und exportiert einen PDF-Report mit Quellen-Linkliste."
+    }
+  ]
+}

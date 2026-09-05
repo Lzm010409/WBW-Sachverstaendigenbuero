@@ -25,19 +25,26 @@ else
   exit 0     # Hooks duerfen den Sessionstart nicht abbrechen
 fi
 
-# --- .env einlesen, nur um den Status zu melden (ueberschreibt nichts) ---------
-KA=""; APIFY=""; BRIGHT=""
-if [ -f "$WURZEL/.env" ]; then
-  KA="$(grep -E '^KA_API_BASE=.+' "$WURZEL/.env" 2>/dev/null | head -1)"
-  APIFY="$(grep -E '^APIFY_TOKEN=.+' "$WURZEL/.env" 2>/dev/null | head -1)"
-  BRIGHT="$(grep -E '^BRIGHTDATA_TOKEN=.+' "$WURZEL/.env" 2>/dev/null | head -1)"
-fi
+# --- Zugangsdaten nur zum Melden lesen (ueberschreibt nichts) -----------------
+# Dieselbe Reihenfolge wie ladeEnv() in adapters/gemeinsam.js: Arbeitsordner
+# zuerst, dann der feste Ort im Benutzerprofil, der Plugin-Updates ueberlebt.
+GLOBAL="$HOME/.claude/wbw-vergleichsfahrzeuge.env"
+KA=""; APIFY=""; BRIGHT=""; QUELLE=""
+for DATEI in "$WURZEL/.env" "$GLOBAL"; do
+  [ -f "$DATEI" ] || continue
+  [ -z "$QUELLE" ] && QUELLE="$DATEI"
+  [ -z "$KA" ]     && KA="$(grep -E '^KA_API_BASE=.+' "$DATEI" 2>/dev/null | head -1)"
+  [ -z "$APIFY" ]  && APIFY="$(grep -E '^APIFY_TOKEN=.+' "$DATEI" 2>/dev/null | head -1)"
+  [ -z "$BRIGHT" ] && BRIGHT="$(grep -E '^BRIGHTDATA_TOKEN=.+' "$DATEI" 2>/dev/null | head -1)"
+done
 [ -n "${KA_API_BASE:-}" ]      && KA="gesetzt"
 [ -n "${APIFY_TOKEN:-}" ]      && APIFY="gesetzt"
 [ -n "${BRIGHTDATA_TOKEN:-}" ] && BRIGHT="gesetzt"
 
 # --- Chromium fuer die PDF-Erzeugung finden -----------------------------------
-if [ -z "${WBW_CHROME:-}" ]; then
+if [ -n "${WBW_CHROME:-}" ]; then
+  CHROME="$WBW_CHROME"          # bereits gesetzt - dann gilt der Wert
+else
   for KANDIDAT in \
     /opt/pw-browsers/chromium-*/chrome-linux/chrome \
     "$(command -v google-chrome 2>/dev/null)" \
@@ -62,5 +69,6 @@ echo "    L1 Kleinanzeigen  : $([ -n "$KA" ] && echo 'nutzbar' || echo 'KA_API_B
 echo "    L2 Bright Data    : $([ -n "$BRIGHT" ] && echo 'Token vorhanden' || echo 'deaktiviert (kein Token)')"
 echo "    L3 Apify          : $([ -n "$APIFY" ] && echo 'Token vorhanden - Lauf zusaetzlich mit WBW_ALLOW_PAID=1 freischalten' || echo 'APIFY_TOKEN fehlt (nur fuer mobile.de noetig)')"
 echo "  PDF-Erzeugung      : ${CHROME:-kein Chromium gefunden - Report bleibt HTML}"
+echo "  Zugangsdaten aus   : ${QUELLE:-keine Datei gefunden - siehe $GLOBAL}"
 echo "  Tests              : npm test (offline, kostenlos) | npm run test:schema (Netz) | npm run test:live (Netz)"
 exit 0

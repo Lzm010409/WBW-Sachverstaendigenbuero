@@ -55,12 +55,66 @@ km-/EZ-bereinigter Wertvorschlag** und eine Linkliste der verwendeten Inserate.
 Details, Belege und die Begründung jeder deaktivierten Stufe:
 `skills/wbw-vergleichsfahrzeuge/references/beschaffung.md`.
 
-## Setup
 
-1. **Node.js** muss verfügbar sein. Sonst nichts — es gibt keine Abhängigkeiten.
-2. `.env.example` nach `.env` kopieren und ausfüllen. `fetch-portal.js` liest die
-   Datei selbst (vom Arbeitsordner aufwärts); ein Export von Hand ist nicht nötig.
-   Bereits gesetzte Umgebungsvariablen haben Vorrang.
+## Installation
+
+Als Plugin in Claude Code — zwei Befehle:
+
+```
+/plugin marketplace add Lzm010409/WBW-Sachverstaendigenbuero
+/plugin install wbw-vergleichsfahrzeug-finder@wbw-gollenstede
+```
+
+Danach ist der Skill in **jedem** Arbeitsordner verfügbar, nicht nur in diesem
+Repo. Node.js muss vorhanden sein — sonst nichts, es gibt keine Abhängigkeiten.
+
+### Zugangsdaten hinterlegen
+
+Die Zugangsdaten gehören **nicht** in den Plugin-Ordner: der wird bei jedem
+Plugin-Update ersetzt und die Datei wäre weg. Stattdessen an den festen Ort im
+Benutzerprofil:
+
+```bash
+mkdir -p ~/.claude
+cat > ~/.claude/wbw-vergleichsfahrzeuge.env <<'EOF'
+KA_API_BASE=https://ka-api.gollenstede.app
+KA_API_USER=wbw
+KA_API_PASS=…
+APIFY_TOKEN=apify_api_…
+WBW_ALLOW_PAID=1
+EOF
+chmod 600 ~/.claude/wbw-vergleichsfahrzeuge.env
+```
+
+Die Skripte suchen in dieser Reihenfolge und nehmen die **erste** Datei, die sie
+finden:
+
+1. `$WBW_ENV_DATEI` — ausdrücklich gesetzter Pfad
+2. `.env` im Arbeitsordner, dann aufwärts (für einen einzelnen Vorgang)
+3. `~/.claude/wbw-vergleichsfahrzeuge.env` — **der empfohlene Ort**
+4. `$CLAUDE_PLUGIN_ROOT/.env`
+5. `.env` neben den Skripten, aufwärts (Entwicklung aus dem Repo)
+
+Bereits gesetzte Umgebungsvariablen haben immer Vorrang. Beim Sessionstart meldet
+das Plugin, welche Datei es benutzt hat und welche Stufen damit nutzbar sind:
+
+```
+WBW-Vergleichsfahrzeug-Finder bereit (Node v22.22.2, keine Abhaengigkeiten zu installieren).
+  Beschaffungsstufen:
+    L0 AutoScout24    : nutzbar (keine Zugangsdaten noetig)
+    L1 Kleinanzeigen  : nutzbar
+    L2 Bright Data    : deaktiviert (kein Token)
+    L3 Apify          : Token vorhanden
+  PDF-Erzeugung      : /usr/bin/chromium
+  Zugangsdaten aus   : /home/du/.claude/wbw-vergleichsfahrzeuge.env
+```
+
+### Aus dem Repo statt als Plugin
+
+Zum Weiterentwickeln reicht ein Klon; `.env` im Repo-Wurzelverzeichnis wird dann
+gefunden. `npm test` läuft ohne `npm install`.
+
+### Alle Umgebungsvariablen
 
 | Variable | Wofür | Nötig für |
 | --- | --- | --- |
@@ -79,17 +133,6 @@ also bereits für ein Portal einsatzfähig.
 > „Apify-Token einrichten". `npm test` bleibt davon unberührt: die Testskripte
 > setzen die Variable nirgends und führen nur Offline-Tests aus.
 
-## Tests
-
-| Befehl | Umfang | Netz | Kosten |
-| --- | --- | --- | --- |
-| `npm test` | 71 Tests: Parser, Vertrag gegen echte Fixtures, Eskalation, Report | nein | keine |
-| `npm run test:schema` | prüft, ob die Portale ihr Format geändert haben | ja | keine |
-| `npm run test:live` | Feldvollständigkeit je Adapter gegen Schwellen | ja | keine |
-
-`npm run test:schema` **vor** einem Gutachten laufen lassen, das gerichtsfest werden
-soll — Portale bauen ihre Seiten um, und ein leeres Feld fällt sonst erst im Report auf.
-
 ## Apify-Token einrichten (einmalig, nur für mobile.de)
 
 AutoScout24 und Kleinanzeigen laufen ohne. Nur mobile.de braucht den Token, weil
@@ -98,11 +141,12 @@ Akamai dort den direkten Abruf sperrt.
 1. Bei [console.apify.com](https://console.apify.com) anmelden.
 2. **Settings → API & Integrations → Personal API tokens** → Token kopieren
    (beginnt mit `apify_api_…`).
-3. In die `.env` im Plugin-Ordner eintragen:
+3. In `~/.claude/wbw-vergleichsfahrzeuge.env` eintragen (siehe Installation):
    ```
    APIFY_TOKEN=apify_api_………
    ```
-   Nicht ins Repo — `.env` steht in `.gitignore`.
+   Nicht ins Repo — `.env` steht in `.gitignore`, und der globale Ort liegt
+   ohnehin ausserhalb.
 4. Guthaben prüfen: die drei Actors rechnen **pro Ergebnis** ab
    (~$0,8–1,5 / 1000 Treffer). Bei `maxItemsProPortal: 40` sind das Cent-Beträge
    je Gutachten.
@@ -119,6 +163,19 @@ Akamai dort den direkten Abruf sperrt.
 
 Ohne Token passiert nichts Schlimmes: mobile.de meldet einen dokumentierten
 Leerstand, die anderen beiden Portale laufen normal weiter.
+
+## Tests
+
+| Befehl | Umfang | Netz | Kosten |
+| --- | --- | --- | --- |
+| `npm test` | 75 Tests: Parser, Vertrag gegen echte Fixtures, Eskalation, Report | nein | keine |
+| `npm run test:schema` | prüft, ob die Portale ihr Format geändert haben | ja | keine |
+| `npm run test:live` | Feldvollständigkeit je Adapter gegen Schwellen | ja | keine |
+
+`npm run test:schema` **vor** einem Gutachten laufen lassen, das gerichtsfest werden
+soll — Portale bauen ihre Seiten um, und ein leeres Feld fällt sonst erst im Report auf.
+
+
 
 ## Nutzung
 
