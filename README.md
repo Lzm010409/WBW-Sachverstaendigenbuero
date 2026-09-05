@@ -75,9 +75,9 @@ also bereits für ein Portal einsatzfähig.
 
 > **Kosten:** Nur L3 kostet Geld (Pay-per-Event, ~$0,8–1,5 / 1000 Treffer).
 > `adapters/apify.js` verweigert den Lauf, solange `WBW_ALLOW_PAID=1` nicht gesetzt
-> ist — `npm test` setzt die Variable nicht, ein versehentlicher kostenpflichtiger
-> Lauf schlägt also fehl, statt Geld zu kosten. Deshalb gehört `WBW_ALLOW_PAID`
-> **nicht dauerhaft in die `.env`**.
+> ist. **In diesem Repo ist die Variable dauerhaft gesetzt** — Details unter
+> „Apify-Token einrichten". `npm test` bleibt davon unberührt: die Testskripte
+> setzen die Variable nirgends und führen nur Offline-Tests aus.
 
 ## Tests
 
