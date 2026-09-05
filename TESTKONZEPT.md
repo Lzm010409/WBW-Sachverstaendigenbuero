@@ -301,7 +301,7 @@ Nicht passieren darf: deutlich weniger Treffer nach der Filterkette, oder
 systematisch leere Felder. Beides heißt kaputtes Mapping, und die Antwort darauf
 sind die Phasen 2–4, nicht weichere Toleranzen.
 
-**Kleinanzeigen ohne GPS** (in Abschnitt 3.3 der Übergabe aus der Quelle belegt):
+**Kleinanzeigen ohne GPS** (im Quellcode des Dienstes belegt, siehe `references/beschaffung.md`):
 Diese Fahrzeuge dürfen nicht still aus der Umkreisfilterung fallen. Ein eigener
 Test prüft, dass sie im Report separat ausgewiesen werden — nicht, dass sie
 irgendwie vorhanden sind, sondern dass sie in der dafür vorgesehenen Rubrik
