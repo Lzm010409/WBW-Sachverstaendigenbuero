@@ -40,6 +40,35 @@ gegen die **dann vorliegende echte Antwort** schreiben, eine Fixture unter
 
 ### AutoScout24 → trägt über L0 (kostenlos)
 
+> **Modellname wird gegen die Portal-Taxonomie geprüft.** AutoScout24 antwortet
+> auf einen unbekannten Modellnamen **nicht** mit 404, sondern liefert
+> stillschweigend *alle* Modelle der Marke. Real beobachtet: `subject.modell`
+> „Golf VII" ergab HTTP 200 und 40 Treffer quer durch Tiguan, Caddy, T6 und
+> Touran — nur 11 davon waren ein Golf. Im Gutachten sieht man das dem Korb
+> nicht an.
+>
+> Der Adapter liest deshalb die Modellliste, die AutoScout24 selbst mitliefert
+> (`props.pageProps.taxonomy.models`), und prüft den Namen dagegen:
+> - Name existiert → unverändert suchen.
+> - Name existiert nach Wegfall **einer Generationsangabe** (`VII`, `7`, `Mk7`)
+>   und der Rest ist ein **echter** Modellname → damit suchen und die Korrektur
+>   als Warnung ins Protokoll und in den Report schreiben.
+>   „Golf VII" → „Golf", „Golf VII Variant" → „Golf Variant".
+> - Sonst → Abbruch mit den gültigen Modellnamen als Vorschlag. Es wird nichts
+>   geraten; Buchstabe-Ziffer-Kombinationen wie „A4", „Mazda 3" oder „500"
+>   bleiben unangetastet.
+>
+> Zusätzlich prüft der Adapter nach dem Abruf, ob wirklich mindestens 60 % der
+> Treffer das gesuchte Modell sind — greift der Filter aus einem anderen Grund
+> nicht, bricht die Stufe ab, statt Datenmüll zu liefern.
+
+> **Karosserieform:** Die Trefferliste enthält kein Bauart-Feld. Die Bauart wird
+> aus dem Titel erkannt (`detectKarosserie` in `ausstattung-matcher.js`), der bei
+> AutoScout24 die Modellversion enthält — „Variant" (Kombi), „Lim." (Limousine),
+> „Sportsvan" (Van). Ohne diese Begriffe rutschte ein Golf Sportsvan in eine
+> Kombi-Suche.
+
+
 Die Trefferliste steht serverseitig gerendert als JSON in
 `<script id="__NEXT_DATA__">` unter `props.pageProps.listings[]` (20 je Seite).
 Verifizierte Suchparameter: `fregfrom`, `fregto`, `kmfrom`, `kmto`, `zip`, `zipr`,

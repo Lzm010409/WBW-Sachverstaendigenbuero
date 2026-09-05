@@ -67,6 +67,69 @@ function findeListings(next) {
   return Array.isArray(ls) ? ls : [];
 }
 
+/**
+ * Die Modellliste, die AutoScout24 selbst mitliefert (props.pageProps.taxonomy.models).
+ * Damit laesst sich pruefen, ob ein Modellname ueberhaupt existiert - statt zu raten.
+ */
+function findeModelle(next) {
+  const tx = next && next.props && next.props.pageProps && next.props.pageProps.taxonomy;
+  const m = tx && tx.models;
+  if (!m || typeof m !== "object") return [];
+  return Object.values(m).flat().filter((x) => x && x.label).map((x) => String(x.label));
+}
+
+const norm = (s) => String(s || "").toLowerCase().replace(/[\s\-_.]+/g, " ").trim();
+
+/**
+ * Loest einen Modellnamen gegen die Portal-Taxonomie auf.
+ * Nur eine Generationsangabe am Ende wird abgeschnitten ("Golf VII" -> "Golf"),
+ * und auch das NUR, wenn der Rest exakt einem echten Modellnamen entspricht.
+ * Ohne Treffer wird NICHTS geraten - der Aufrufer meldet den Fehler.
+ * @returns {{label:string, korrigiert:boolean}|null}
+ */
+function aufloeseModell(gewuenscht, modelle) {
+  const z = norm(gewuenscht);
+  if (!z || !modelle.length) return null;
+  const treffer = modelle.find((m) => norm(m) === z);
+  if (treffer) return { label: treffer, korrigiert: false };
+
+  // Eine Generationsangabe darf entfallen - egal an welcher Stelle sie steht
+  // ("Golf VII", "Golf VII Variant", "Golf Mk7"). Uebernommen wird das Ergebnis
+  // NUR, wenn der Rest exakt einem echten Modellnamen entspricht und genau ein
+  // Modell in Frage kommt. Bewusst NICHT generisch Buchstabe+Ziffer abschneiden -
+  // das wuerde echte Modellnamen wie "A4", "Mazda 3" oder "500" zerstoeren.
+  const istGeneration = (w) => /^(?:m(?:k|ark)?\s?\d{1,2}|[ivx]{1,5}|\d{1,2})$/i.test(w);
+  const worte = z.split(" ");
+  const kandidaten = new Set();
+  for (let i = 0; i < worte.length; i++) {
+    if (!istGeneration(worte[i])) continue;
+    const rest = worte.slice(0, i).concat(worte.slice(i + 1)).join(" ").trim();
+    if (!rest) continue;
+    const m = modelle.find((x) => norm(x) === rest);
+    if (m) kandidaten.add(m);
+  }
+  if (kandidaten.size === 1) return { label: [...kandidaten][0], korrigiert: true };
+  return null;
+}
+
+/** Modellnamen, die zum ersten Wort der Eingabe passen - fuer die Fehlermeldung. */
+function modellVorschlaege(gewuenscht, modelle) {
+  const kopf = norm(gewuenscht).split(" ")[0];
+  if (!kopf) return [];
+  return modelle.filter((m) => norm(m).split(" ")[0] === kopf).slice(0, 12);
+}
+
+/** Anteil der Treffer, die wirklich das gesuchte Modell sind. */
+function modellAnteil(listings, modell) {
+  if (!listings.length || !modell) return 1;
+  const z = norm(modell);
+  const passt = listings.filter((l) => {
+    const m = norm(l && l.vehicle && l.vehicle.model);
+    return m && (m === z || z.startsWith(m) || m.startsWith(z));
+  }).length;
+  return passt / listings.length;
+}
+
 /** Gesamttrefferzahl (nur informativ fürs Protokoll). */
 function gesamtTreffer(next) {
   const n = next && next.props && next.props.pageProps && next.props.pageProps.numberOfResults;
@@ -132,10 +195,18 @@ async function holen(eingaben, opts = {}) {
   let items = [];
   let gesamt = null;
   let unvollstaendig = false;
+  let geprueft = false;
+
+  // Modell gegen die Portal-Taxonomie pruefen. Grund: AutoScout24 antwortet auf
+  // einen unbekannten Modellnamen NICHT mit 404, sondern liefert stillschweigend
+  // alle Modelle der Marke. "Golf VII" ergab so 40 Treffer quer durch Tiguan,
+  // Caddy und T6 - ein Vergleichskorb, der im Gutachten nichts taugt.
+  let eff = eingaben;
+  let modellHinweis = null;
 
   for (let seite = 1; seite <= maxSeiten; seite++) {
     if (seite > 1) await pauseFn();
-    const url = bauSuchUrl(eingaben, seite);
+    const url = bauSuchUrl(eff, seite);
     const t0 = Date.now();
     let r, next, ls;
     try {
@@ -156,13 +227,51 @@ async function holen(eingaben, opts = {}) {
       throw err;  // schon die erste Seite scheitert -> Stufe ist gescheitert
     }
     if (gesamt == null) gesamt = gesamtTreffer(next);
+
+    if (seite === 1 && !geprueft) {
+      geprueft = true;
+      const gewuenscht = (eff.autoScout && eff.autoScout.model) || "";
+      const modelle = findeModelle(next);
+      if (gewuenscht && modelle.length) {
+        const auf = aufloeseModell(gewuenscht, modelle);
+        if (!auf) {
+          const v = modellVorschlaege(gewuenscht, modelle);
+          const e = new Error(
+            `AutoScout24 kennt kein Modell "${gewuenscht}". Das Portal liefert dann ` +
+            `stillschweigend ALLE Modelle der Marke - der Korb waere unbrauchbar.` +
+            (v.length ? `\n   Gueltige Modellnamen: ${v.join(", ")}` : "") +
+            `\n   subject.modell in params.json entsprechend setzen.`);
+          e.code = "MODELL_UNBEKANNT";
+          throw e;
+        }
+        if (auf.korrigiert) {
+          // Der bereinigte Name ist ein ECHTER Modellname aus der Portalliste -
+          // keine Vermutung. Einmal neu holen und im Protokoll vermerken.
+          modellHinweis = `Modell "${gewuenscht}" existiert bei AutoScout24 nicht; auf "${auf.label}" korrigiert (aus der Modellliste des Portals).`;
+          warnungen.push(modellHinweis);
+          eff = { ...eingaben, autoScout: { ...eingaben.autoScout, model: auf.label } };
+          items = []; seite = 0; gesamt = null;   // Lauf mit dem richtigen Modell neu beginnen
+          continue;
+        }
+      }
+      const anteil = modellAnteil(ls, gewuenscht);
+      if (gewuenscht && anteil < 0.6) {
+        const e = new Error(
+          `AutoScout24 lieferte nur ${(anteil * 100).toFixed(0)} % Treffer des gesuchten ` +
+          `Modells "${gewuenscht}" - der Modellfilter hat nicht gegriffen.`);
+        e.code = "MODELLFILTER_WIRKUNGSLOS";
+        throw e;
+      }
+    }
+
     if (!ls.length) break;
     for (const l of ls) { const f = mappe(l, warnungen); if (f) items.push(f); }
     if (items.length >= maxItems) break;
   }
 
   items = dedupe(items).slice(0, maxItems);
-  return { items, protokoll: { abrufe, gesamtTrefferLautPortal: gesamt, unvollstaendig, warnungen } };
+  return { items, protokoll: { abrufe, gesamtTrefferLautPortal: gesamt, unvollstaendig, modellHinweis, warnungen } };
 }
 
-module.exports = { holen, bauSuchUrl, mappe, findeListings, findeNextData, gesamtTreffer, BASIS, QUELLE };
+module.exports = { holen, bauSuchUrl, mappe, findeListings, findeNextData, gesamtTreffer,
+  findeModelle, aufloeseModell, modellVorschlaege, modellAnteil, BASIS, QUELLE };

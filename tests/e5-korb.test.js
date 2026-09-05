@@ -84,3 +84,21 @@ test("Eine kostenpflichtige Stufe wird im Report als solche gekennzeichnet", () 
   const { html } = renderReport(r);
   assert.match(html, /L3.*kostenpflichtig/s);
 });
+
+test("Eine Modellkorrektur erscheint sichtbar im Report", () => {
+  // Gutachterlich relevant: wenn der Adapter den Suchbegriff ändert, muss das
+  // im Report stehen — sonst weiss niemand, wonach tatsächlich gesucht wurde.
+  const fahrzeuge = normalizeAll({ autoscout24: [fz("a")] });
+  const r = runPipeline({ ...PARAMS, fahrzeuge });
+  r.beschaffung = [{
+    portal: "autoscout24", getrageneStufe: "L0", trefferGesamt: 40, ende: "2026-09-05T08:00:00.000Z",
+    versuche: [{ ergebnis: "erfolg", details: { warnungen: [
+      'Modell "golf-vii" existiert bei AutoScout24 nicht; auf "Golf" korrigiert (aus der Modellliste des Portals).',
+    ] } }],
+  }];
+  const { html } = renderReport(r);
+  assert.match(html, /Hinweis autoscout24/);
+  // esc() maskiert die Anführungszeichen im HTML — auf den Klartext prüfen.
+  assert.match(html, /korrigiert \(aus der Modellliste des Portals\)/);
+  assert.match(html, /existiert bei AutoScout24 nicht/);
+});

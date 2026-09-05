@@ -92,8 +92,13 @@ finden:
 1. `$WBW_ENV_DATEI` — ausdrücklich gesetzter Pfad
 2. `.env` im Arbeitsordner, dann aufwärts (für einen einzelnen Vorgang)
 3. `~/.claude/wbw-vergleichsfahrzeuge.env` — **der empfohlene Ort**
-4. `$CLAUDE_PLUGIN_ROOT/.env`
-5. `.env` neben den Skripten, aufwärts (Entwicklung aus dem Repo)
+4. `~/.claude/.env` — funktioniert genauso
+5. `~/.claude/wbw.env`, `~/.wbw-vergleichsfahrzeuge.env`
+6. `$CLAUDE_PLUGIN_ROOT/.env`
+7. `.env` neben den Skripten, aufwärts (Entwicklung aus dem Repo)
+
+Wird **keine** Datei gefunden, nennt die Fehlermeldung jeden geprüften Pfad —
+damit die Ursache nicht im Skill gesucht wird, wenn die Datei nur woanders liegt.
 
 Bereits gesetzte Umgebungsvariablen haben immer Vorrang. Beim Sessionstart meldet
 das Plugin, welche Datei es benutzt hat und welche Stufen damit nutzbar sind:

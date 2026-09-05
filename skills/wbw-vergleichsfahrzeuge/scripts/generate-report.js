@@ -225,6 +225,8 @@ ${R.beschaffung.map((b) => `<tr>
   <td>${esc(dt(b.ende))}</td>
 </tr>`).join("")}
 </table>
+${R.beschaffung.flatMap((b) => ((b.versuche || []).find((v) => v.ergebnis === "erfolg")?.details?.warnungen || [])
+    .map((w) => `<div class="small" style="margin-top:6px"><b>Hinweis ${esc(b.portal)}:</b> ${esc(w)}</div>`)).join("")}
 <div class="small muted">Stufen: L0 = direkter Portalabruf · L1 = eigener Dienst · L2 = Web Unlocker · L3 = Apify.${R.beschaffung.filter((b) => !b.getrageneStufe).length ? ` Für ${R.beschaffung.filter((b) => !b.getrageneStufe).map((b) => esc(b.portal)).join(", ")} lieferte keine Stufe Treffer – als dokumentierter Leerstand zu werten.` : ""}</div>
 ` : ""}
 

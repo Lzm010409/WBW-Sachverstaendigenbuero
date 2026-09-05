@@ -244,6 +244,14 @@ const LINIEN = [
   ["Highline", ["highline"]],
   ["Comfortline", ["comfortline"]],
   ["Trendline", ["trendline"]],
+  ["Lounge", ["lounge"]],
+  ["Pop", ["pop"]], ["Pop Star", ["pop star", "popstar"]],
+  ["Sport", ["sport"]], ["S-Design", ["s-design", "s design", "sdesign"]],
+  ["City Cross", ["city cross", "citycross"]], ["Cross", ["cross"]],
+  ["Mirror", ["mirror"]], ["Easy", ["easy"]],
+  ["Ambition", ["ambition"]], ["Ambiente", ["ambiente"]],
+  ["Titanium", ["titanium"]], ["Trend", ["trend"]], ["Cool & Sound", ["cool & sound", "cool und sound"]],
+  ["Edition", ["edition"]],
   ["Elegance", ["elegance"]],
   ["Avantgarde", ["avantgarde"]],
   ["Progressive", ["progressive"]],
@@ -264,12 +272,23 @@ function detectLinie(text) {
 const KAROSSERIEN = [
   ["Cabrio", ["cabrio", "cabriolet", "convertible", "roadster"]],
   ["Coupé", ["coupe", "coupé"]],
-  ["Kombi", ["kombi", "estate", "wagon", "station wagon", "touring", "avant"]],
+  // "variant", "sportstourer", "shooting brake" u. a.: so heisst der Kombi bei den
+  // Herstellern. AutoScout24 liefert KEIN Bauart-Feld - die Bauart steckt nur im
+  // Modellnamen bzw. Titel, und ohne diese Begriffe blieb sie dort unerkannt.
+  ["Kombi", ["kombi", "estate", "wagon", "station wagon", "touring", "avant",
+    "variant", "sportstourer", "sports tourer", "sportbrake", "shooting brake",
+    "sw", "kombilimousine", "turnier", "caravan", "vario", "break",
+    "combi", "t-modell", "t modell", "tmodell", "sportwagon", "sports wagon"]],
   ["SUV", ["suv", "geländewagen", "gelaendewagen", "gelände", "offroad", "off-road", "crossover"]],
-  ["Van", ["van", "minibus", "transporter", "kleinbus", "mpv"]],
+  ["Van", ["van", "minibus", "transporter", "kleinbus", "mpv", "sportsvan",
+    "sports van", "tourer", "scenic", "verso", "picasso", "zafira", "sharan",
+    "touran", "galaxy", "espace", "multivan", "caddy", "combo", "berlingo",
+    "partner", "kangoo", "doblo", "rifter", "proace", "spacetourer"]],
   ["Pickup", ["pickup", "pick-up", "pritsche"]],
   ["Kleinwagen", ["kleinwagen", "small car", "hatchback", "kompaktklasse"]],
-  ["Limousine", ["limousine", "sedan", "saloon", "stufenheck"]],
+  // "lim." ist die Abkuerzung, die AutoScout24 im Titel fuehrt ("VII Lim. Trendline").
+  ["Limousine", ["limousine", "sedan", "saloon", "stufenheck", "lim", "lim.",
+    "schraegheck", "schrägheck", "fliessheck", "fließheck"]],
 ];
 
 // Bauart aus Bauart-Feld + Titel erkennen.
