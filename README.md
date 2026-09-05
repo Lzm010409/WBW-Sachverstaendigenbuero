@@ -6,9 +6,10 @@ Report (PDF/HTML) plus Quellen-Linkliste.
 
 ## Was es tut
 
-Aus den Eckdaten eines Subjektfahrzeugs sucht das Plugin über **Apify** auf
-**mobile.de**, **AutoScout24** und **Kleinanzeigen** vergleichbare Inserate und engt
-sie methodisch ein:
+Aus den Eckdaten eines Subjektfahrzeugs sucht das Plugin auf **mobile.de**,
+**AutoScout24** und **Kleinanzeigen** vergleichbare Inserate und engt sie methodisch
+ein. Die Beschaffung läuft über eine **Eskalationskette** — die erste Stufe, die
+Treffer liefert, gewinnt; Apify ist nur noch die letzte Rückfallebene:
 
 - Laufleistung **±25.000 km**
 - Erstzulassung **±1 Jahr**
@@ -32,29 +33,62 @@ km-/EZ-bereinigter Wertvorschlag** und eine Linkliste der verwendeten Inserate.
 
 ## Komponenten
 
-- **Skill** `wbw-vergleichsfahrzeuge` — führt durch Eingabe → Scrape → Filter → Export.
-- **MCP-Server** `apify` — bindet die Scraper-Actors an.
-- **Scripts** (Node, ohne externe Abhängigkeiten):
+- **Skill** `wbw-vergleichsfahrzeuge` — führt durch Eingabe → Beschaffung → Filter → Export.
+- **Scripts** (Node, **ohne jede externe Abhängigkeit** — kein `npm install` nötig):
+  - `fetch-portal.js` + `providers.json` + `adapters/` (Beschaffung, Eskalationskette)
   - `geo-filter.js`, `dedup-fahrzeuge.js`, `ausstattung-matcher.js` (Kernlogik)
-  - `build-search-urls.js` (Fahrzeugdaten → deterministische Actor-Eingaben/Such-URLs)
+  - `build-search-urls.js` (Fahrzeugdaten → deterministische Such-Eingaben)
   - `normalize.js` (Portal-Rohdaten → gemeinsames Schema)
+  - `geocode.js` (PLZ → Koordinaten, zwei Quellen)
   - `build-input.js`, `pipeline.js` (Verarbeitung)
-  - `wbw-vorschlag.js` (Wertvorschlag), `generate-report.js` (HTML + Linkliste)
+  - `wbw-vorschlag.js` (Wertvorschlag), `run-report.js`/`generate-report.js` (HTML, PDF, Linkliste)
+
+### Beschaffungsstufen
+
+| Stufe | Was | Kosten | Stand |
+| --- | --- | --- | --- |
+| L0 | direkter Portalabruf | keine | trägt **AutoScout24** |
+| L1 | eigener Dienst auf Büro-Infrastruktur | keine | trägt **Kleinanzeigen** |
+| L2 | Bright Data Web Unlocker | Free Tier | verdrahtet, deaktiviert |
+| L3 | Apify | **kostenpflichtig** | trägt **mobile.de** |
+
+Details, Belege und die Begründung jeder deaktivierten Stufe:
+`skills/wbw-vergleichsfahrzeuge/references/beschaffung.md`.
 
 ## Setup
 
-1. **Node.js** muss verfügbar sein.
-2. **Apify-MCP-Server**: ist in `.mcp.json` als `https://mcp.apify.com` mit den drei
-   Actors vorkonfiguriert (`blackfalcondata/mobile-de-scraper`,
-   `blackfalcondata/autoscout24-scraper`, `fatihtahta/ebay-kleinanzeigen-scraper`).
-   Alle drei liefern strukturierte Felder inkl. km/EZ/Leistung und **GPS-Koordinaten**;
-   mobile.de zusätzlich nativen **PLZ-Umkreis**. So tragen alle drei Portale zum
-   Vergleichskorb bei.
-3. **Umgebungsvariable** `APIFY_TOKEN` mit einem gültigen Apify-API-Token setzen.
+1. **Node.js** muss verfügbar sein. Sonst nichts — es gibt keine Abhängigkeiten.
+2. `.env.example` nach `.env` kopieren und ausfüllen. `fetch-portal.js` liest die
+   Datei selbst (vom Arbeitsordner aufwärts); ein Export von Hand ist nicht nötig.
+   Bereits gesetzte Umgebungsvariablen haben Vorrang.
 
-> Hinweis: Alle Actors rechnen **pro Ergebnis** ab (Pay-per-Event, ~$0,8–1,5 / 1000
-> Treffer). Ergebnislimit je Portal moderat halten (z. B. 30–50); `includeDetails`
-> liefert Ausstattung/GPS, ist aber langsamer.
+| Variable | Wofür | Nötig für |
+| --- | --- | --- |
+| `KA_API_BASE`, `KA_API_USER`, `KA_API_PASS` | eigener Kleinanzeigen-Dienst | **L1 — Kleinanzeigen** |
+| `APIFY_TOKEN` | Apify-REST-API | **L3 — produktiv nur mobile.de** |
+| `BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE` | Web Unlocker | L2 (derzeit deaktiviert) |
+| `WBW_ALLOW_PAID=1` | Kostensperre lösen | jeder L3-Lauf, **bewusst pro Aufruf** |
+| `WBW_CHROME` | Pfad zu Chrome/Chromium | PDF-Erzeugung, falls nicht im Standardpfad |
+
+**AutoScout24 (L0) braucht keine Zugangsdaten.** Ohne jede Variable ist der Skill
+also bereits für ein Portal einsatzfähig.
+
+> **Kosten:** Nur L3 kostet Geld (Pay-per-Event, ~$0,8–1,5 / 1000 Treffer).
+> `adapters/apify.js` verweigert den Lauf, solange `WBW_ALLOW_PAID=1` nicht gesetzt
+> ist — `npm test` setzt die Variable nicht, ein versehentlicher kostenpflichtiger
+> Lauf schlägt also fehl, statt Geld zu kosten. Deshalb gehört `WBW_ALLOW_PAID`
+> **nicht dauerhaft in die `.env`**.
+
+## Tests
+
+| Befehl | Umfang | Netz | Kosten |
+| --- | --- | --- | --- |
+| `npm test` | 71 Tests: Parser, Vertrag gegen echte Fixtures, Eskalation, Report | nein | keine |
+| `npm run test:schema` | prüft, ob die Portale ihr Format geändert haben | ja | keine |
+| `npm run test:live` | Feldvollständigkeit je Adapter gegen Schwellen | ja | keine |
+
+`npm run test:schema` **vor** einem Gutachten laufen lassen, das gerichtsfest werden
+soll — Portale bauen ihre Seiten um, und ein leeres Feld fällt sonst erst im Report auf.
 
 ## Nutzung
 
@@ -66,8 +100,13 @@ Report und die Linkliste.
 
 - Der **Wertvorschlag ist unverbindlich**; die WBW-Festsetzung trifft der
   Sachverständige. Inseratspreise sind Angebots-, keine Transaktionspreise.
-- Hinterlegte PLZ-Zentren: `47` (Krefeld), `41` (Neuss), `40` (Düsseldorf). Für andere
-  PLZ wird das Zentrum zur Laufzeit geocoded.
+- **Geocoding:** AutoScout24 und der Kleinanzeigen-Dienst liefern keine Koordinaten;
+  der Umkreis hängt daher an `geocode.js`. Das fragt zippopotam.us und, wo dessen
+  Daten defekt sind (ganze PLZ-Regionen im Rhein-Ruhr-Raum), Nominatim/OSM nach.
+  Grober letzter Rückfall: die hinterlegten PLZ-Zentren `47` (Krefeld), `41` (Neuss),
+  `40` (Düsseldorf).
+- Fahrzeuge **ohne Koordinaten** werden nicht still verworfen, sondern im Report
+  separat ausgewiesen — der Sachverständige entscheidet über manuelle Prüfung.
 - Stimmen Feldzuordnungen nach einem echten Lauf nicht (leere Preise/km/Features),
   Kandidatenlisten in `scripts/normalize.js` ergänzen — siehe
   `skills/wbw-vergleichsfahrzeuge/references/datenschema.md`.

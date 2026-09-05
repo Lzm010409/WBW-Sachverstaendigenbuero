@@ -11,7 +11,7 @@ description: >
   Erstzulassung (±1 Jahr), Ausstattung und PLZ-Umkreis (±200 km) und exportiert
   einen PDF-Report mit Quellen-Linkliste.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # WBW-Vergleichsfahrzeug-Finder

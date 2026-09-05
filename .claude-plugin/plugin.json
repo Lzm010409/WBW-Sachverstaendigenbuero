@@ -1,9 +1,18 @@
 {
   "name": "wbw-vergleichsfahrzeug-finder",
-  "version": "0.1.0",
-  "description": "Sucht über Apify (mobile.de, AutoScout24, Kleinanzeigen) vergleichbare Fahrzeuge zur Ermittlung des Wiederbeschaffungswerts (WBW) und exportiert einen PDF-Report mit Quellen-Linkliste.",
+  "version": "0.2.0",
+  "description": "Recherchiert Vergleichsfahrzeuge zur Ermittlung des Wiederbeschaffungswerts (WBW) auf mobile.de, AutoScout24 und Kleinanzeigen ueber eine Eskalationskette (direkter Portalabruf, eigener Dienst, Web Unlocker, Apify als letzte Rueckfallebene) und exportiert einen PDF-Report mit Quellen-Linkliste.",
   "author": {
     "name": "Kfz-Sachverständigenbüro Gollenstede"
   },
-  "keywords": ["kfz", "gutachten", "wiederbeschaffungswert", "wbw", "apify", "mobile.de", "autoscout", "kleinanzeigen"]
+  "keywords": [
+    "kfz",
+    "gutachten",
+    "wiederbeschaffungswert",
+    "wbw",
+    "mobile.de",
+    "autoscout24",
+    "kleinanzeigen",
+    "fahrzeugbewertung"
+  ]
 }
