@@ -164,9 +164,15 @@ Alle drei sind **Pay-per-Event**: ohne positives `maxTotalChargeUsd` bricht der
 Lauf bei 0 $ ab. Der Wert steht je Stufe in `providers.json`.
 
 **Kostensperre:** `adapters/apify.js` verweigert den Lauf, solange
-`WBW_ALLOW_PAID=1` nicht gesetzt ist. `npm test` setzt die Variable nicht — ein
-versehentlicher kostenpflichtiger Lauf im normalen Testlauf schlägt fehl, statt
-Geld zu kosten. Ein eigener Test prüft genau diese Sperre.
+`WBW_ALLOW_PAID=1` nicht gesetzt ist. Ein eigener Test prüft genau diese Sperre,
+damit sie nicht bei einem späteren Refactor still verschwindet.
+
+**In diesem Repo ist sie bewusst gelöst:** `WBW_ALLOW_PAID=1` steht dauerhaft in
+`.env` und in `.claude/settings.json`, weil der Betreiber die L3-Kosten als
+unkritisch eingestuft hat. Ein Aufruf von `fetch-portal.js mobile.de` kostet damit
+ohne weitere Rückfrage Geld. Die Testskripte in `package.json` setzen die Variable
+weiterhin nirgends, und `npm test` führt ausschließlich Offline-Tests aus — ein
+Testlauf kann also auch so keinen Actor starten.
 
 ## Umgebungsvariablen
 

@@ -67,7 +67,7 @@ Details, Belege und die Begründung jeder deaktivierten Stufe:
 | `KA_API_BASE`, `KA_API_USER`, `KA_API_PASS` | eigener Kleinanzeigen-Dienst | **L1 — Kleinanzeigen** |
 | `APIFY_TOKEN` | Apify-REST-API | **L3 — produktiv nur mobile.de** |
 | `BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE` | Web Unlocker | L2 (derzeit deaktiviert) |
-| `WBW_ALLOW_PAID=1` | Kostensperre lösen | jeder L3-Lauf, **bewusst pro Aufruf** |
+| `WBW_ALLOW_PAID=1` | Kostensperre lösen | jeder L3-Lauf — hier dauerhaft gesetzt |
 | `WBW_CHROME` | Pfad zu Chrome/Chromium | PDF-Erzeugung, falls nicht im Standardpfad |
 
 **AutoScout24 (L0) braucht keine Zugangsdaten.** Ohne jede Variable ist der Skill
@@ -107,11 +107,15 @@ Akamai dort den direkten Abruf sperrt.
    (~$0,8–1,5 / 1000 Treffer). Bei `maxItemsProPortal: 40` sind das Cent-Beträge
    je Gutachten.
 
-> **`WBW_ALLOW_PAID` gehört NICHT in die `.env`.** Der Token allein löst noch
-> keinen kostenpflichtigen Lauf aus — `adapters/apify.js` verweigert ihn, solange
-> `WBW_ALLOW_PAID=1` nicht gesetzt ist. Das ist die Bremse gegen versehentliche
-> Kosten. Wenn du mobile.de mitlaufen lassen willst, sag das im Gespräch; dann
-> wird die Variable **für diesen einen Lauf** gesetzt.
+> **Kostensperre — in diesem Repo bewusst gelöst.** `adapters/apify.js` verweigert
+> L3-Läufe, solange `WBW_ALLOW_PAID=1` nicht gesetzt ist. Hier ist die Variable
+> dauerhaft gesetzt (in `.env` und in `.claude/settings.json`), weil der Betreiber
+> die L3-Kosten als unkritisch eingestuft hat. **Folge:** ein Aufruf von
+> `fetch-portal.js mobile.de` kostet ab sofort ohne Rückfrage Geld.
+>
+> Wer das enger haben will: den Wert in beiden Dateien leeren und pro Lauf setzen —
+> `WBW_ALLOW_PAID=1 node "$SC/fetch-portal.js" mobile.de …`. Die Sperre selbst
+> bleibt im Code und wird von einem eigenen Test abgesichert.
 
 Ohne Token passiert nichts Schlimmes: mobile.de meldet einen dokumentierten
 Leerstand, die anderen beiden Portale laufen normal weiter.
