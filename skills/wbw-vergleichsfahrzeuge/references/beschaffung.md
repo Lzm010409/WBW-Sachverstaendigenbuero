@@ -101,6 +101,44 @@ an der Auth-Middleware, nicht am Schema. Der direkte Zugriff auf kleinanzeigen.d
 aus fremden Netzen wird IP-gesperrt — deshalb läuft der Dienst auf der eigenen
 Infrastruktur.
 
+#### Wo die Zugangsdaten stehen und wie man sie ändert
+
+Benutzername und Passwort stehen **ausschließlich** in einem Custom Label der
+Coolify-Anwendung, das Passwort dort nur als Hash:
+
+```
+traefik.http.middlewares.ka-auth.basicauth.users=wbw:{SHA}<base64(sha1(passwort))>
+```
+
+Der Hash ist nicht rückrechenbar — ein vergessenes Passwort kann nur **neu gesetzt**,
+nicht ausgelesen werden. Die Coolify-API liefert `custom_labels` nicht mit aus; die
+Labels sind nur in der Oberfläche sichtbar:
+
+> Projekt `wbw-adapterschicht` → Anwendung `ka-api` → *Configuration* → *Custom Labels*
+
+Passwort wechseln (drei Schritte):
+
+1. Hash erzeugen:
+   `printf '%s' 'NEUES_PASSWORT' | openssl sha1 -binary | openssl base64`
+2. In den Custom Labels die Zeile `…basicauth.users=wbw:{SHA}…` durch den neuen Hash
+   ersetzen, speichern, **Redeploy**. Alle übrigen Labels unangetastet lassen — der
+   Satz ersetzt die von Coolify erzeugten und muss vollständig bleiben.
+3. `KA_API_PASS` in der `.env` auf denselben Klartext setzen.
+
+Danach prüfen — erwartet 401 / 401 / 200:
+
+```
+curl -s -o /dev/null -w '%{http_code}\n' https://ka-api.gollenstede.app/
+curl -s -o /dev/null -w '%{http_code}\n' -u wbw:falsch https://ka-api.gollenstede.app/
+curl -s -o /dev/null -w '%{http_code}\n' -u wbw:NEUES_PASSWORT https://ka-api.gollenstede.app/
+```
+
+Coolifys Feld `http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
+(`is_http_basic_auth_enabled = false`) — es ist ein Überbleibsel des gescheiterten
+Versuchs mit der eingebauten Funktion und darf nicht als Quelle der Wahrheit gelten.
+Ebenso steht in `fqdn` nur der sslip-Hostname; der Traefik-Router bedient trotzdem
+beide Hostnamen.
+
 Drei Korrekturen gegenüber den ursprünglichen Annahmen, alle **live** bestätigt:
 
 1. **Es gibt keinen `/health`-Endpunkt** — `GET /health` liefert 404.
