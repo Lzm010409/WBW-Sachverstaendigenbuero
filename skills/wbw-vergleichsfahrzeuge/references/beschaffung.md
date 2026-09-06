@@ -157,10 +157,45 @@ unerreichbarer Dienst ergibt 502 statt 200, ohne Zugangsdaten in der Umgebung st
 der Vorschalter gar nicht erst. Dazu die echte Kette `kleinanzeigen.js` → Vorschalter
 → Dienst, einmal mit richtigem und einmal mit falschem Passwort.
 
-Was **nicht** belegt ist: der Aufbau ist nie in Coolify ausgerollt worden. In der
-Umgebung, in der er entstand, gab es keinen Docker-Daemon und keine Schreibrechte auf
-die Coolify-API. Solange die Migration nicht gelaufen ist, schützt weiterhin der
-Labelsatz, und `ka-passwort-setzen.sh` bleibt der Weg für einen Passwortwechsel.
+**Erster Ausrollversuch am 06.09.2026 — und was dabei schiefging.** Der Stack lief
+(Anwendung `ka-api-auth`, `m10snfb0ac1qdlerm8k47oem`), der Zugriffsschutz stimmte:
+gegen `https://ka-api-neu.116.202.21.243.sslip.io` kamen 401 / 401 / 200, mit
+`www-authenticate: Basic realm="WBW-Beschaffung", charset="UTF-8"` und dem Körper
+`401 Zugangsdaten erforderlich` — also nachweislich der Vorschalter und nicht mehr
+Traefik. Der Docker-HEALTHCHECK meldete `running:healthy`, was ohne gesetzte
+Umgebungsvariablen unmöglich ist.
+
+Dann kam ein echter Lauf über `fetch-portal.js` — und damit lief ein **zweiter**
+Chromium-Scraper neben dem produktiven auf demselben Server. Innerhalb weniger Minuten:
+HTTP 502 vom Vorschalter, danach beide ka-api-Container weg, und Coolify verlor die
+SSH-Verbindung zum Server („Connection timed out during banner exchange"). Andere
+Anwendungen auf derselben Maschine (`schulranzen`) antworteten weiter in unter einer
+Sekunde — es war also kein Netz- oder Traefik-Ausfall.
+
+Der Produktionsdienst war rund 20 Minuten nicht erreichbar. Wiederhergestellt durch
+Stoppen des neuen Stacks und Neustart der alten Anwendung; belegt mit 401 / 401 / 200
+und einem echten L1-Lauf mit 8 Treffern, davon 8 mit Preis und Kilometerstand.
+
+**Daraus zwei Regeln.**
+
+1. **Nie zwei ka-api-Instanzen gleichzeitig auf diesem Server.** Der Dienst startet
+   pro Suche einen Chromium. Zwei davon parallel überlasten die Maschine so weit, dass
+   selbst SSH ausfällt. Die Umschaltung ist deshalb **erst alt stoppen, dann neu
+   starten** — kein Parallelbetrieb zum Vergleichen, auch nicht kurz.
+2. **Der Stack braucht ein Speicherlimit.** Ohne `mem_limit` kann der Scraper die
+   ganze Maschine mitnehmen, statt selbst beendet zu werden. Ein sinnvoller Wert setzt
+   voraus, dass man den Arbeitsspeicher des Servers kennt — der ist über die
+   Coolify-API nicht abrufbar. Bis dahin bleibt die Compose-Datei ohne Limit, und das
+   ist eine bekannte offene Flanke, keine Auslassung.
+
+Nicht abschließend belegt ist die Ursache: dass es die Speichererschöpfung durch den
+zweiten Scraper war, ist die naheliegende Erklärung und passt zum zeitlichen Verlauf,
+aber Serverkennzahlen gibt die Coolify-API nicht heraus.
+
+Was **noch nicht** belegt ist: ein echter Datenlauf über den neuen Stack. Der eine
+Versuch endete im Ausfall. Die Domain ist deshalb **nicht** umgehängt — sie zeigt
+weiter auf die alte Anwendung, und `ka-passwort-setzen.sh` bleibt bis zur vollzogenen
+Umschaltung der Weg für einen Passwortwechsel.
 
 Der alte Aufbau bleibt bis dahin unangetastet. Coolifys Feld
 `http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos

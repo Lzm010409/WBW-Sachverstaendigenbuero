@@ -174,6 +174,32 @@ test("der Authorization-Header wird nicht an den Dienst weitergereicht", async (
   } finally { await abbau(); }
 });
 
+test("ein 502 hinterlaesst eine Spur im Log", async () => {
+  // Beim ersten echten Ausrollen kam ein 502 zurueck und in den Container-Logs
+  // stand nichts dazu. Diese Zeile ist der Grund, warum es die Meldung gibt.
+  const leer = http.createServer();
+  const totPort = await lauschen(leer);
+  await schliessen(leer);
+
+  const gemeldet = [];
+  const echt = console.error;
+  console.error = (...a) => gemeldet.push(a.join(" "));
+  const proxy = baueServer({
+    benutzer: BENUTZER, passwort: PASSWORT,
+    upstream: `http://127.0.0.1:${totPort}`, realm: "WBW-Beschaffung",
+  });
+  const proxyPort = await lauschen(proxy);
+  try {
+    await anfragen(proxyPort, "/inserate-by-url", { method: "POST", headers: basic(BENUTZER, PASSWORT) });
+    const zeile = gemeldet.join("\n");
+    assert.match(zeile, /^502 POST \/inserate-by-url/m, "Methode und Pfad fehlen im Log");
+    assert.ok(!zeile.includes(PASSWORT), "das Passwort darf nicht ins Log");
+  } finally {
+    console.error = echt;
+    await schliessen(proxy);
+  }
+});
+
 test("nicht erreichbarer Dienst ergibt 502, nicht 200", async () => {
   // Freien Port ermitteln und sofort wieder freigeben - dorthin zeigt niemand.
   const leer = http.createServer();

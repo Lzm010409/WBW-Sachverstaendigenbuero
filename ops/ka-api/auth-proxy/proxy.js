@@ -119,6 +119,12 @@ function baueServer(konfig) {
     );
 
     weiter.on("error", (fehler) => {
+      // Ins Log, nicht nur an den Aufrufer: ein 502 ohne Spur in den Container-
+      // Logs kostet bei der Fehlersuche eine Stunde. Ohne Zugangsdaten, aber mit
+      // Methode und Pfad - das ist es, was man spaeter braucht.
+      console.error(
+        `502 ${anfrage.method} ${anfrage.url} -> ${konfig.upstream}: ${fehler.message}`
+      );
       if (!antwort.headersSent) {
         antwort.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
       }
