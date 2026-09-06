@@ -17,22 +17,43 @@ const { URL } = require("url");
  * Bereits gesetzte Umgebungsvariablen gewinnen — eine Datei darf nie eine
  * bewusst gesetzte Variable ueberschreiben.
  */
-function ladeEnv(startVerzeichnis) {
-  const fs = require("fs");
+function envSuchpfade(startVerzeichnis) {
   const path = require("path");
-  const kandidaten = [];
-  if (process.env.WBW_ENV_DATEI) kandidaten.push(process.env.WBW_ENV_DATEI);
-  // Vom Arbeitsordner und vom Modulordner aus je bis zu 6 Ebenen aufwaerts suchen.
-  for (const start of [process.cwd(), startVerzeichnis || __dirname]) {
+  const os = require("os");
+  const aufwaerts = (start) => {
+    const out = [];
     let d = start;
     for (let i = 0; i < 6; i++) {
-      kandidaten.push(path.join(d, ".env"));
+      out.push(path.join(d, ".env"));
       const oben = path.dirname(d);
       if (oben === d) break;
       d = oben;
     }
-  }
-  for (const datei of kandidaten) {
+    return out;
+  };
+  const heim = os.homedir();
+  return [
+    // 1. Ausdruecklich gesetzter Pfad gewinnt immer.
+    process.env.WBW_ENV_DATEI,
+    // 2. Arbeitsordner aufwaerts - die .env des konkreten Vorgangs.
+    ...aufwaerts(process.cwd()),
+    // 3. Feste Orte im Benutzerprofil. WICHTIG fuer installierte Plugins: der
+    //    Plugin-Cache wird bei jedem Update ersetzt, eine Datei darin waere weg.
+    //    Beide Schreibweisen, weil ".env in ~/.claude" die naheliegende ist.
+    path.join(heim, ".claude", "wbw-vergleichsfahrzeuge.env"),
+    path.join(heim, ".claude", ".env"),
+    path.join(heim, ".claude", "wbw.env"),
+    path.join(heim, ".wbw-vergleichsfahrzeuge.env"),
+    // 4. Plugin-Wurzel.
+    process.env.CLAUDE_PLUGIN_ROOT ? path.join(process.env.CLAUDE_PLUGIN_ROOT, ".env") : null,
+    // 5. Modulordner aufwaerts - Rueckfall bei Arbeit aus dem Repo.
+    ...aufwaerts(startVerzeichnis || __dirname),
+  ].filter(Boolean);
+}
+
+function ladeEnv(startVerzeichnis) {
+  const fs = require("fs");
+  for (const datei of envSuchpfade(startVerzeichnis)) {
     let roh;
     try { roh = fs.readFileSync(datei, "utf8"); } catch { continue; }
     for (const zeile of roh.split(/\r?\n/)) {
@@ -50,6 +71,26 @@ function ladeEnv(startVerzeichnis) {
     return datei;   // erste gefundene Datei gewinnt
   }
   return null;
+}
+
+/** Fester Ort fuer Zugangsdaten, der Plugin-Updates ueberlebt. */
+function globaleEnvDatei() {
+  return require("path").join(require("os").homedir(), ".claude", "wbw-vergleichsfahrzeuge.env");
+}
+
+/**
+ * Fehlermeldung, die sagt WO gesucht wurde. Ohne das sucht man die Ursache im
+ * Skill statt in einer Datei am falschen Ort - genau das ist einmal passiert.
+ */
+function fehlendeZugangsdaten(was, variablen) {
+  const pfade = envSuchpfade().slice(0, 12).map((p) => "     " + p).join("\n");
+  const e = new Error(
+    `${was}: ${variablen.join(" / ")} nicht gesetzt.\n` +
+    `   Gesucht wurde in dieser Reihenfolge (erste gefundene Datei gewinnt):\n${pfade}\n` +
+    `   Empfohlen: ${globaleEnvDatei()}`
+  );
+  e.code = "ZUGANGSDATEN_FEHLEN";
+  return e;
 }
 
 /** Browser-Headersatz. Ohne diesen antwortet AutoScout24 mit 403. */
@@ -257,7 +298,7 @@ function leeresFahrzeug(quelle) {
 }
 
 module.exports = {
-  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv,
+  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv, globaleEnvDatei, envSuchpfade, fehlendeZugangsdaten,
   zahl, ez, plz, ausstattung,
   hole, holeJson, dedupe, leeresFahrzeug,
 };

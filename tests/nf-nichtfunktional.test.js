@@ -178,3 +178,76 @@ test("ladeEnv() ohne .env liefert null statt zu werfen", () => {
     fs.rmSync(d, { recursive: true, force: true });
   }
 });
+
+test("ladeEnv() bevorzugt den Arbeitsordner vor dem globalen Ort", () => {
+  // Wichtig fuer installierte Plugins: die .env eines konkreten Vorgangs muss
+  // die globale Datei im Benutzerprofil schlagen koennen.
+  const os = require("os");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "wbw-vorrang-"));
+  const lokal = path.join(d, ".env");
+  fs.writeFileSync(lokal, "WBW_TEST_VORRANG=ausDemArbeitsordner\n");
+  const alt = { ...process.env };
+  delete process.env.WBW_TEST_VORRANG;
+  delete process.env.WBW_ENV_DATEI;
+  const cwd = process.cwd();
+  try {
+    process.chdir(d);
+    const datei = g.ladeEnv(d);
+    assert.equal(datei, lokal, "die .env im Arbeitsordner muss gewinnen");
+    assert.equal(process.env.WBW_TEST_VORRANG, "ausDemArbeitsordner");
+  } finally {
+    process.chdir(cwd);
+    for (const k of Object.keys(process.env)) if (!(k in alt)) delete process.env[k];
+    Object.assign(process.env, alt);
+    fs.rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test("globaleEnvDatei() zeigt auf einen Ort, der Plugin-Updates überlebt", () => {
+  const os = require("os");
+  const p = g.globaleEnvDatei();
+  assert.equal(p, path.join(os.homedir(), ".claude", "wbw-vergleichsfahrzeuge.env"));
+  // Nicht im Plugin-Cache: der wird bei jedem Update ersetzt.
+  assert.ok(!/plugins[\/\\]cache/.test(p), "darf nicht im Plugin-Cache liegen");
+});
+
+test("Marketplace-Manifest ist vollständig und zeigt auf die Plugin-Wurzel", () => {
+  const m = JSON.parse(fs.readFileSync(path.join(WURZEL, ".claude-plugin", "marketplace.json"), "utf8"));
+  assert.ok(m.name && m.description && m.owner && m.owner.name);
+  assert.equal(m.plugins.length, 1);
+  const p0 = m.plugins[0];
+  assert.equal(p0.source, "./", "die Plugin-Wurzel ist das Repo-Wurzelverzeichnis");
+  const manifest = JSON.parse(fs.readFileSync(path.join(WURZEL, ".claude-plugin", "plugin.json"), "utf8"));
+  assert.equal(p0.name, manifest.name, "Name muss zum Plugin-Manifest passen");
+  assert.equal(p0.version, manifest.version, "Version muss zum Plugin-Manifest passen");
+  const pkg = JSON.parse(fs.readFileSync(path.join(WURZEL, "package.json"), "utf8"));
+  assert.equal(manifest.version, pkg.version, "und zu package.json — sonst driften die Versionen auseinander");
+});
+
+test("Der SessionStart-Hook liegt im Plugin und ist an beiden Stellen registriert", () => {
+  // Der Hook muss IM Plugin liegen, nicht unter .claude/ - sonst reist er weder
+  // in der .plugin-Datei noch bei einer Marketplace-Installation mit.
+  const h = path.join(WURZEL, "hooks", "session-start.sh");
+  assert.ok(fs.existsSync(h), "hooks/session-start.sh muss existieren");
+  assert.ok(fs.statSync(h).mode & 0o111, "muss ausführbar sein");
+
+  // 1. Plugin-Registrierung (reist mit)
+  const hj = JSON.parse(fs.readFileSync(path.join(WURZEL, "hooks", "hooks.json"), "utf8"));
+  const pluginCmds = hj.hooks.SessionStart.flatMap((e) => e.hooks).map((x) => x.command);
+  assert.ok(pluginCmds.some((c) => c.includes("${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh")),
+    "muss über ${CLAUDE_PLUGIN_ROOT} referenziert sein, nicht über einen festen Pfad");
+
+  // 2. Projekt-Registrierung (für die Arbeit aus dem Repo heraus)
+  const s = JSON.parse(fs.readFileSync(path.join(WURZEL, ".claude", "settings.json"), "utf8"));
+  const projektCmds = s.hooks.SessionStart.flatMap((e) => e.hooks).map((x) => x.command);
+  assert.ok(projektCmds.some((c) => c.includes("hooks/session-start.sh")));
+  assert.ok(!projektCmds.some((c) => c.includes(".claude/hooks/")),
+    "der alte Ort unter .claude/ darf nicht mehr referenziert werden");
+});
+
+test("Der Hook meldet Tests nur, wenn sie tatsächlich danebenliegen", () => {
+  // In einer reinen Plugin-Installation gibt es keine Testsuite - ein Hinweis
+  // auf `npm test` waere dort eine Sackgasse.
+  const s = fs.readFileSync(path.join(WURZEL, "hooks", "session-start.sh"), "utf8");
+  assert.match(s, /if \[ -f "\$WURZEL\/package\.json" \] && \[ -d "\$WURZEL\/tests" \]/);
+});

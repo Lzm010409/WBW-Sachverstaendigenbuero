@@ -40,6 +40,35 @@ gegen die **dann vorliegende echte Antwort** schreiben, eine Fixture unter
 
 ### AutoScout24 → trägt über L0 (kostenlos)
 
+> **Modellname wird gegen die Portal-Taxonomie geprüft.** AutoScout24 antwortet
+> auf einen unbekannten Modellnamen **nicht** mit 404, sondern liefert
+> stillschweigend *alle* Modelle der Marke. Real beobachtet: `subject.modell`
+> „Golf VII" ergab HTTP 200 und 40 Treffer quer durch Tiguan, Caddy, T6 und
+> Touran — nur 11 davon waren ein Golf. Im Gutachten sieht man das dem Korb
+> nicht an.
+>
+> Der Adapter liest deshalb die Modellliste, die AutoScout24 selbst mitliefert
+> (`props.pageProps.taxonomy.models`), und prüft den Namen dagegen:
+> - Name existiert → unverändert suchen.
+> - Name existiert nach Wegfall **einer Generationsangabe** (`VII`, `7`, `Mk7`)
+>   und der Rest ist ein **echter** Modellname → damit suchen und die Korrektur
+>   als Warnung ins Protokoll und in den Report schreiben.
+>   „Golf VII" → „Golf", „Golf VII Variant" → „Golf Variant".
+> - Sonst → Abbruch mit den gültigen Modellnamen als Vorschlag. Es wird nichts
+>   geraten; Buchstabe-Ziffer-Kombinationen wie „A4", „Mazda 3" oder „500"
+>   bleiben unangetastet.
+>
+> Zusätzlich prüft der Adapter nach dem Abruf, ob wirklich mindestens 60 % der
+> Treffer das gesuchte Modell sind — greift der Filter aus einem anderen Grund
+> nicht, bricht die Stufe ab, statt Datenmüll zu liefern.
+
+> **Karosserieform:** Die Trefferliste enthält kein Bauart-Feld. Die Bauart wird
+> aus dem Titel erkannt (`detectKarosserie` in `ausstattung-matcher.js`), der bei
+> AutoScout24 die Modellversion enthält — „Variant" (Kombi), „Lim." (Limousine),
+> „Sportsvan" (Van). Ohne diese Begriffe rutschte ein Golf Sportsvan in eine
+> Kombi-Suche.
+
+
 Die Trefferliste steht serverseitig gerendert als JSON in
 `<script id="__NEXT_DATA__">` unter `props.pageProps.listings[]` (20 je Seite).
 Verifizierte Suchparameter: `fregfrom`, `fregto`, `kmfrom`, `kmto`, `zip`, `zipr`,
@@ -71,6 +100,73 @@ weil Cloudflare je nach SSL-Modus per HTTP zum Ursprung spricht — der Schutz h
 an der Auth-Middleware, nicht am Schema. Der direkte Zugriff auf kleinanzeigen.de
 aus fremden Netzen wird IP-gesperrt — deshalb läuft der Dienst auf der eigenen
 Infrastruktur.
+
+#### Zugriffsschutz: der Weg weg von den Labels
+
+**Bisheriger Stand (noch ausgerollt).** Benutzer und Passwort stehen in einem Custom
+Label der Coolify-Anwendung, das Passwort dort nur als Hash:
+
+```
+traefik.http.middlewares.ka-auth.basicauth.users=wbw:{SHA}<base64(sha1(passwort))>
+```
+
+Das hat zwei Nachteile, die sich im Betrieb gerächt haben. Erstens ist der Hash nicht
+rückrechenbar — ein vergessenes Passwort lässt sich nur neu setzen. Zweitens sind per
+API gesetzte Labels **in der Coolify-Oberfläche nicht editierbar**, und die API gibt
+`custom_labels` nicht einmal aus (ein `GET` auf die Anwendung liefert 83 Felder, keines
+davon enthält „label"). Ein Passwortwechsel bedeutet deshalb, den vollständigen
+Labelsatz neu zu schreiben — gesetzte `custom_labels` ersetzen die von Coolify
+erzeugten, eine Teiländerung von Hand legt den Dienst mit HTTP 503 lahm. Genau dafür
+liegt `ka-passwort-setzen.sh` im Wurzelverzeichnis (`--pruefen`, `--zeigen`, setzen).
+
+**Neuer Aufbau (in `ops/ka-api/`, noch nicht ausgerollt).** Der Schutz hängt an zwei
+gewöhnlichen Umgebungsvariablen statt an Labels. Ein winziger Vorschalter
+(`ops/ka-api/auth-proxy/proxy.js`, Node-Bordmittel, keine Abhängigkeiten) prüft Basic
+Auth gegen `KA_API_USER`/`KA_API_PASS` und reicht die Anfrage erst danach an den
+unveränderten Dienst weiter. In Coolify stehen beide Werte dann im Reiter
+*Environment Variables* und sind dort jederzeit änderbar; ein Redeploy genügt. Custom
+Labels braucht dieser Aufbau nicht — Coolify darf seine eigenen erzeugen.
+
+Der Dienst selbst bekommt **keine Domain und keinen Router**: im Compose-Verbund ist er
+nur über das interne Netz erreichbar (`expose`, nicht `ports`). Der Vorschalter ist der
+einzige Weg hinein. Sein Docker-HEALTHCHECK verlangt auf eine Anfrage *ohne*
+Zugangsdaten eine 401 — damit fällt ein stiller Ausfall des Zugriffsschutzes schon
+beim Ausrollen auf, statt erst dann, wenn jemand den offenen Dienst findet.
+
+Aufbau in Coolify:
+
+| Feld | Wert |
+| --- | --- |
+| Ressource | Docker Compose, aus diesem Git-Repository |
+| Base Directory | `/ops/ka-api` |
+| Compose-Datei | `docker-compose.yaml` |
+| Domain | dem Dienst **`auth`** zuweisen, Port `8080` |
+| Env-Variablen | `KA_API_USER`, `KA_API_PASS` |
+| Healthcheck | Coolifys eigenen **aus** lassen (siehe unten) |
+
+Coolifys HTTP-Healthcheck hat schon einmal dazu geführt, dass ein funktionierender
+Deploy als `exited:unhealthy` galt. Der Docker-HEALTHCHECK des Images tut dasselbe
+zuverlässiger.
+
+Was **belegt** ist: 14 Tests in `tests/e6-authproxy.test.js` — ohne Zugangsdaten 401
+und der Dienst sieht die Anfrage nie, falsches Passwort 401, falscher Benutzer 401,
+vier kaputte `Authorization`-Header kommen nicht durch, richtige Zugangsdaten 200 mit
+unveränderter Antwort, Methode/Pfad/Abfrageteil/Körper werden nicht verbogen, das
+Passwort wird nicht an den Dienst weitergereicht und steht nicht im Log, ein
+unerreichbarer Dienst ergibt 502 statt 200, ohne Zugangsdaten in der Umgebung startet
+der Vorschalter gar nicht erst. Dazu die echte Kette `kleinanzeigen.js` → Vorschalter
+→ Dienst, einmal mit richtigem und einmal mit falschem Passwort.
+
+Was **nicht** belegt ist: der Aufbau ist nie in Coolify ausgerollt worden. In der
+Umgebung, in der er entstand, gab es keinen Docker-Daemon und keine Schreibrechte auf
+die Coolify-API. Solange die Migration nicht gelaufen ist, schützt weiterhin der
+Labelsatz, und `ka-passwort-setzen.sh` bleibt der Weg für einen Passwortwechsel.
+
+Der alte Aufbau bleibt bis dahin unangetastet. Coolifys Feld
+`http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
+(`is_http_basic_auth_enabled = false`) — ein Überbleibsel des gescheiterten Versuchs
+mit der eingebauten Funktion; es ist nicht die Quelle der Wahrheit. Ebenso steht in
+`fqdn` nur der sslip-Hostname; der Traefik-Router bedient trotzdem beide Hostnamen.
 
 Drei Korrekturen gegenüber den ursprünglichen Annahmen, alle **live** bestätigt:
 

@@ -248,8 +248,10 @@ test("Teilerfolg über Seitengrenzen: Seite 1 bleibt erhalten, wenn Seite 2 wirf
   const fx = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "autoscout24-suchseite.json"), "utf8"));
   const html = '<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify(fx) + "</script>";
   let n = 0;
+  // Marke/Modell muessen zur Fixture passen: seit der Taxonomie-Pruefung wuerde
+  // ein Modell, das die Fixture nicht kennt, vorher als unbekannt abgewiesen.
   const r = await as24.holen(
-    { autoScout: { make: "fiat", model: "tipo" }, _abgeleitet: {} },
+    { autoScout: { make: "volkswagen", model: "Golf" }, _abgeleitet: {} },
     {
       maxItems: 100, maxSeiten: 3, pause: async () => {},
       hole: async () => { if (++n === 1) return { status: 200, headers: {}, body: html }; throw new Error("Netz weg"); },

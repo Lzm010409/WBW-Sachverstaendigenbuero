@@ -1,5 +1,5 @@
 {
- "_herkunft": "Echte Antwort von https://www.autoscout24.de/lst/volkswagen/golf (Filter fregfrom=2017&fregto=2019&kmto=150000&zip=47798&zipr=200), abgerufen 2026-09-05. Auf 5 Inserate gekürzt; seller und location.street anonymisiert, Fahrzeugdaten unverändert.",
+ "_herkunft": "Echte Antwort von https://www.autoscout24.de/lst/volkswagen/golf (Filter fregfrom=2017&fregto=2019&kmto=150000&zip=47798&zipr=200), abgerufen 2026-09-05. Auf 5 Inserate gekürzt; seller und location.street anonymisiert, Fahrzeugdaten unverändert. Zusätzlich taxonomy.models aufgenommen — die Modellliste, die AutoScout24 selbst mitliefert und gegen die der Adapter den Modellnamen prüft.",
  "props": {
   "pageProps": {
    "listings": [
@@ -841,7 +841,727 @@
     }
    ],
    "numberOfResults": 866,
-   "numberOfPages": 44
+   "numberOfPages": 44,
+   "taxonomy": {
+    "models": {
+     "74": [
+      {
+       "value": 2083,
+       "label": "Corrado",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2084,
+       "label": "Golf",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 2087,
+       "label": "Jetta",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2089,
+       "label": "Passat",
+       "makeId": 74,
+       "modelLineId": 100
+      },
+      {
+       "value": 2090,
+       "label": "Polo",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 2091,
+       "label": "Santana",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2092,
+       "label": "Scirocco",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2093,
+       "label": "Sharan",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2094,
+       "label": "Vento",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2106,
+       "label": "Bus",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2113,
+       "label": "Anfibio",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 2114,
+       "label": "Käfer",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 14792,
+       "label": "T4",
+       "makeId": 74,
+       "modelLineId": 105
+      },
+      {
+       "value": 15363,
+       "label": "T2",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15381,
+       "label": "New Beetle",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15534,
+       "label": "Lupo",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15535,
+       "label": "Bora",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15734,
+       "label": "Caddy",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15767,
+       "label": "LT",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15864,
+       "label": "Maggiolino",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 15981,
+       "label": "Buggy",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 16520,
+       "label": "Taro",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 16521,
+       "label": "L80",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 16584,
+       "label": "Iltis",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 16585,
+       "label": "181",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 16623,
+       "label": "Karmann Ghia",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18190,
+       "label": "T4 Allstar",
+       "makeId": 74,
+       "modelLineId": 105
+      },
+      {
+       "value": 18200,
+       "label": "T3 Blue Star",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 18210,
+       "label": "T5 Caravelle",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 18220,
+       "label": "T5 Multivan",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 18230,
+       "label": "Transporter",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18240,
+       "label": "T3 White Star",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 18276,
+       "label": "Phaeton",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18285,
+       "label": "Touareg",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18317,
+       "label": "T3",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 18329,
+       "label": "Touran",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18370,
+       "label": "T5",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 18575,
+       "label": "T5 California",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 18599,
+       "label": "Fox",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18707,
+       "label": "Eos",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 18747,
+       "label": "T5 Shuttle",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 18781,
+       "label": "Crafter",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19063,
+       "label": "Tiguan",
+       "makeId": 74,
+       "modelLineId": 158
+      },
+      {
+       "value": 19127,
+       "label": "Routan",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19261,
+       "label": "Amarok",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19344,
+       "label": "Pointer",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19618,
+       "label": "T1",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19659,
+       "label": "Polo Sedan",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 19724,
+       "label": "Beetle",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19750,
+       "label": "up!",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 19780,
+       "label": "CC",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 20026,
+       "label": "Golf Plus",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 20170,
+       "label": "Polo Cross",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 20315,
+       "label": "Cross Golf",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 20316,
+       "label": "Cross Touran",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 20333,
+       "label": "Polo Plus",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 20334,
+       "label": "Polo Variant",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 20335,
+       "label": "Polo GTI",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 20336,
+       "label": "Polo R WRC",
+       "makeId": 74,
+       "modelLineId": 99
+      },
+      {
+       "value": 20337,
+       "label": "Passat CC",
+       "makeId": 74,
+       "modelLineId": 100
+      },
+      {
+       "value": 20338,
+       "label": "Passat Variant",
+       "makeId": 74,
+       "modelLineId": 100
+      },
+      {
+       "value": 20339,
+       "label": "Passat Alltrack",
+       "makeId": 74,
+       "modelLineId": 100
+      },
+      {
+       "value": 20340,
+       "label": "Golf Variant",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 20341,
+       "label": "Golf Cabriolet",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 20342,
+       "label": "Golf GTI",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 20352,
+       "label": "T3 Multivan",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 20353,
+       "label": "T4 Multivan",
+       "makeId": 74,
+       "modelLineId": 105
+      },
+      {
+       "value": 20354,
+       "label": "T3 California",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 20355,
+       "label": "T4 California",
+       "makeId": 74,
+       "modelLineId": 105
+      },
+      {
+       "value": 20356,
+       "label": "T3 Caravelle",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 20357,
+       "label": "T4 Caravelle",
+       "makeId": 74,
+       "modelLineId": 105
+      },
+      {
+       "value": 20358,
+       "label": "T5 Kombi",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 20359,
+       "label": "T4 Kombi",
+       "makeId": 74,
+       "modelLineId": 105
+      },
+      {
+       "value": 20360,
+       "label": "T3 Kombi",
+       "makeId": 74,
+       "modelLineId": 104
+      },
+      {
+       "value": 20376,
+       "label": "Golf Sportsvan",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 20380,
+       "label": "XL1",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 20841,
+       "label": "Derby",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 21034,
+       "label": "Sonstige",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 21080,
+       "label": "T6 Transporter",
+       "makeId": 74,
+       "modelLineId": 115
+      },
+      {
+       "value": 21081,
+       "label": "T6 Caravelle",
+       "makeId": 74,
+       "modelLineId": 115
+      },
+      {
+       "value": 21082,
+       "label": "T6 Multivan",
+       "makeId": 74,
+       "modelLineId": 115
+      },
+      {
+       "value": 21083,
+       "label": "T6 California",
+       "makeId": 74,
+       "modelLineId": 115
+      },
+      {
+       "value": 21179,
+       "label": "Coccinelle",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 21180,
+       "label": "Escarabajo",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 74550,
+       "label": "Arteon",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 74667,
+       "label": "T-Roc",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 74938,
+       "label": "Atlas",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 74939,
+       "label": "Kever",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75194,
+       "label": "T-Cross",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75216,
+       "label": "T5 Transporter",
+       "makeId": 74,
+       "modelLineId": 106
+      },
+      {
+       "value": 75217,
+       "label": "T6 Kombi",
+       "makeId": 74,
+       "modelLineId": 115
+      },
+      {
+       "value": 75601,
+       "label": "Grand California",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75602,
+       "label": "ID.3",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75645,
+       "label": "ID.4",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75655,
+       "label": "Golf GTE",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 75738,
+       "label": "T6.1 California",
+       "makeId": 74,
+       "modelLineId": 151
+      },
+      {
+       "value": 75739,
+       "label": "T6.1 Caravelle",
+       "makeId": 74,
+       "modelLineId": 151
+      },
+      {
+       "value": 75740,
+       "label": "T6.1 Kombi",
+       "makeId": 74,
+       "modelLineId": 151
+      },
+      {
+       "value": 75741,
+       "label": "T6.1 Multivan",
+       "makeId": 74,
+       "modelLineId": 151
+      },
+      {
+       "value": 75742,
+       "label": "T6.1 Transporter",
+       "makeId": 74,
+       "modelLineId": 151
+      },
+      {
+       "value": 75860,
+       "label": "e-up!",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75939,
+       "label": "T7 Multivan",
+       "makeId": 74,
+       "modelLineId": 165
+      },
+      {
+       "value": 75940,
+       "label": "e-Golf",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 75946,
+       "label": "Taigo",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 75995,
+       "label": "ID.5",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 76161,
+       "label": "Tiguan Allspace",
+       "makeId": 74,
+       "modelLineId": 158
+      },
+      {
+       "value": 76266,
+       "label": "ID. Buzz",
+       "makeId": 74,
+       "modelLineId": 159
+      },
+      {
+       "value": 76267,
+       "label": "ID. Buzz Cargo",
+       "makeId": 74,
+       "modelLineId": 159
+      },
+      {
+       "value": 76355,
+       "label": "ID.6",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 76356,
+       "label": "Viloran",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 76377,
+       "label": "Golf R",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 76490,
+       "label": "ID.7",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 76518,
+       "label": "Golf GTD",
+       "makeId": 74,
+       "modelLineId": 101
+      },
+      {
+       "value": 76791,
+       "label": "T7 California",
+       "makeId": 74,
+       "modelLineId": 165
+      },
+      {
+       "value": 76793,
+       "label": "T7 Transporter",
+       "makeId": 74,
+       "modelLineId": 165
+      },
+      {
+       "value": 76850,
+       "label": "T7 Kombi",
+       "makeId": 74,
+       "modelLineId": 165
+      },
+      {
+       "value": 76851,
+       "label": "T7 Caravelle",
+       "makeId": 74,
+       "modelLineId": 165
+      },
+      {
+       "value": 76863,
+       "label": "Tayron",
+       "makeId": 74,
+       "modelLineId": null
+      },
+      {
+       "value": 79376,
+       "label": "ID. Polo",
+       "makeId": 74,
+       "modelLineId": null
+      }
+     ]
+    }
+   }
   }
  }
 }

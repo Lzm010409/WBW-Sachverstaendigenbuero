@@ -21,7 +21,7 @@
  *        data.location = {zip, city, state}  -> KEINE Koordinaten (geocode.js füllt nach)
  *        data.features = Liste von Strings (Ausstattung)
  */
-const { holeJson, pause, zahl, ez, ausstattung, dedupe, leeresFahrzeug } = require("./gemeinsam.js");
+const { holeJson, pause, zahl, ez, ausstattung, dedupe, leeresFahrzeug, fehlendeZugangsdaten } = require("./gemeinsam.js");
 
 const QUELLE = "kleinanzeigen";
 const PORTAL = "https://www.kleinanzeigen.de";
@@ -135,7 +135,7 @@ function authKopf() {
  */
 async function holen(eingaben, opts = {}) {
   const basis = String(opts.endpoint || process.env.KA_API_BASE || "").replace(/\/+$/, "");
-  if (!basis) throw new Error("Kleinanzeigen L1: KA_API_BASE ist nicht gesetzt (siehe .env.example)");
+  if (!basis) throw fehlendeZugangsdaten("Kleinanzeigen L1", ["KA_API_BASE"]);
   const maxItems = opts.maxItems ?? ((eingaben.kleinanzeigen && eingaben.kleinanzeigen.limit) || 60);
   const maxSeiten = Math.min(opts.maxSeiten ?? 3, 20);
   const batchId = opts.batchId || `wbw-${Date.now()}`;
@@ -154,7 +154,10 @@ async function holen(eingaben, opts = {}) {
     timeoutMs: opts.timeoutMs ?? 240000,
   });
   abrufe.push({ url: `${basis}/inserate-by-url`, suchUrl, status: liste.status, ms: Date.now() - t0, zeitpunkt: new Date().toISOString() });
-  if (liste.status === 401) throw new Error("Kleinanzeigen L1: HTTP 401 — KA_API_USER/KA_API_PASS fehlen oder falsch");
+  if (liste.status === 401) {
+    if (!process.env.KA_API_USER || !process.env.KA_API_PASS) throw fehlendeZugangsdaten("Kleinanzeigen L1 (HTTP 401)", ["KA_API_USER", "KA_API_PASS"]);
+    throw new Error("Kleinanzeigen L1: HTTP 401 — KA_API_USER/KA_API_PASS sind gesetzt, werden aber abgelehnt");
+  }
   if (liste.status !== 200 || !liste.daten) throw new Error(`Kleinanzeigen L1: HTTP ${liste.status} von /inserate-by-url`);
   if (liste.daten.success === false) throw new Error(`Kleinanzeigen L1: Dienst meldet success:false (${liste.daten.error || "ohne Grund"})`);
 

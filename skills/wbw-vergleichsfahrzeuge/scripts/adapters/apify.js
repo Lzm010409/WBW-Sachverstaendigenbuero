@@ -14,7 +14,7 @@
  *   POST /v2/acts/{actor}/run-sync-get-dataset-items?token=…&maxTotalChargeUsd=…
  *   Rumpf = das Actor-Input-Objekt, Antwort = das Dataset als JSON-Array.
  */
-const { holeJson, zahl, ez, ausstattung, leeresFahrzeug } = require("./gemeinsam.js");
+const { holeJson, zahl, ez, ausstattung, leeresFahrzeug, fehlendeZugangsdaten } = require("./gemeinsam.js");
 
 const BASIS = "https://api.apify.com/v2";
 
@@ -31,7 +31,7 @@ function pruefeFreigabe() {
 
 function token() {
   const t = process.env.APIFY_TOKEN;
-  if (!t) { const e = new Error("L3 Apify: APIFY_TOKEN nicht gesetzt"); e.code = "L3_KEIN_TOKEN"; throw e; }
+  if (!t) throw fehlendeZugangsdaten("L3 Apify", ["APIFY_TOKEN"]);
   return t;
 }
 
