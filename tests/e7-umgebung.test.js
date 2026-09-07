@@ -122,3 +122,53 @@ test("unter Linux bleiben die bisherigen Kandidaten erhalten", () => {
     assert.ok(k.includes(erwartet), `${erwartet} fehlt`);
   }
 });
+
+// --- Mehrere Dateien --------------------------------------------------------
+//
+// Befund beim Nachbauen einer Installation: frueher nahm die Suche die ERSTE
+// gefundene Datei und hoerte auf. Eine fremde .env im Arbeitsordner - fuer
+// irgendein anderes Projekt, ohne KA_-Schluessel - hat damit die Zugangsdaten
+// des Plugins vollstaendig verdeckt. Jetzt werden alle Dateien in der
+// Suchreihenfolge zusammengefuehrt, je Schluessel gewinnt die erste Nennung.
+
+test("eine fremde .env im Arbeitsordner verdeckt die Zugangsdaten nicht mehr", () => {
+  const s = sandkasten();
+  try {
+    // Fremde .env im Arbeitsordner, ohne jeden KA_-Schluessel.
+    fs.writeFileSync(path.join(s.dir, ".env"), "IRGENDWAS_ANDERES=egal\n");
+    // Zugangsdaten dort, wo das Plugin liegt.
+    fs.writeFileSync(path.join(s.dir, "plugin", ".env"),
+      `KA_API_BASE=https://beispiel.invalid\nKA_API_USER=wbw\nKA_API_PASS=${GEHEIM}\n`);
+    const lauf = starte({ CLAUDE_PLUGIN_ROOT: path.join(s.dir, "plugin") }, s);
+    assert.strictEqual(lauf.status, 0, lauf.stderr);
+    assert.match(lauf.stdout, /L1 Kleinanzeigen : nutzbar/,
+      "die Zugangsdaten des Plugins wurden von der fremden .env verdeckt");
+    assert.ok(!lauf.stdout.includes(GEHEIM));
+  } finally { s.weg(); }
+});
+
+test("die naeher liegende Datei gewinnt je Schluessel, nicht die ganze Datei", () => {
+  const s = sandkasten();
+  try {
+    fs.writeFileSync(path.join(s.dir, ".env"), "KA_API_USER=aus_arbeitsordner\n");
+    fs.writeFileSync(path.join(s.dir, "plugin", ".env"),
+      "KA_API_USER=aus_plugin\nKA_API_BASE=https://aus-plugin.invalid\nKA_API_PASS=xxxxxxxxxx\n");
+    const lauf = starte({ CLAUDE_PLUGIN_ROOT: path.join(s.dir, "plugin") }, s);
+    // Benutzer aus dem Arbeitsordner (steht frueher in der Reihenfolge),
+    // Basis und Passwort aus dem Plugin - die Dateien ergaenzen sich.
+    assert.match(lauf.stdout, /KA_API_USER\s+aus_arbeitsordner/);
+    assert.match(lauf.stdout, /KA_API_BASE\s+https:\/\/aus-plugin\.invalid/);
+    assert.match(lauf.stdout, /L1 Kleinanzeigen : nutzbar/);
+  } finally { s.weg(); }
+});
+
+test("beide Dateien werden in der Ausgabe genannt", () => {
+  const s = sandkasten();
+  try {
+    fs.writeFileSync(path.join(s.dir, ".env"), "KA_API_USER=a\n");
+    fs.writeFileSync(path.join(s.dir, "plugin", ".env"), "KA_API_BASE=https://b.invalid\n");
+    const lauf = starte({ CLAUDE_PLUGIN_ROOT: path.join(s.dir, "plugin") }, s);
+    const zeilen = lauf.stdout.split("\n").filter((z) => z.includes("benutzt:"));
+    assert.strictEqual(zeilen.length, 2, "es muessen beide Dateien genannt werden:\n" + lauf.stdout);
+  } finally { s.weg(); }
+});

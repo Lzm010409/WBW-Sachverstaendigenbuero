@@ -141,6 +141,55 @@ WBW-Vergleichsfahrzeug-Finder bereit (Node v22.22.2, keine Abhaengigkeiten zu in
   Zugangsdaten aus   : /home/du/.claude/wbw-vergleichsfahrzeuge.env
 ```
 
+### In der Cloud betreiben
+
+Der Skill läuft vollständig in einer Cloud-Sitzung — nachgemessen in einem
+Claude-Cloud-Container: AutoScout24, Kleinanzeigen, Apify, der eigene Dienst,
+zippopotam und Nominatim sind alle erreichbar, ein Chromium für die PDF-Erzeugung
+liegt bereit, und der ausgehende Proxy wird von `gemeinsam.js` korrekt benutzt.
+Cloud-fähig war der Skill also immer; was fehlte, war ein Weg, die Zugangsdaten
+dorthin zu bekommen. Dafür gibt es drei, in dieser Reihenfolge zu empfehlen:
+
+**1. Umgebungsvariablen der Cloud-Umgebung (sauberste Lösung).** Claude Code im
+Browser lässt pro Umgebung Umgebungsvariablen setzen; sie gelten dann für jede
+Sitzung in dieser Umgebung. Dort `KA_API_BASE`, `KA_API_USER`, `KA_API_PASS`,
+`APIFY_TOKEN` und `WBW_ALLOW_PAID` eintragen — fertig. Siehe
+<https://code.claude.com/docs/en/claude-code-on-the-web>. Vorteil: die
+Zugangsdaten stecken in keiner Datei, die man versehentlich weitergibt, und ein
+Passwortwechsel ist eine Änderung an einer Stelle.
+
+**2. Zugangsdaten ins Paket bauen.** Wenn es keine Stelle für Umgebungsvariablen
+gibt:
+
+```bash
+./bauen.sh --mit-zugangsdaten            # nimmt die .env dieses Ordners
+./bauen.sh --mit-zugangsdaten geheim.env meine.plugin
+```
+
+Dann liegt eine `.env` im Paket, und der Skill findet sie nach der Installation
+ohne jede weitere Einrichtung — belegt gegen eine ausgepackte Installation mit
+leerem Benutzerordner und leerem Arbeitsordner.
+
+Übernommen wird **nur** eine feste Liste von Variablen
+(`KA_API_BASE`, `KA_API_USER`, `KA_API_PASS`, `APIFY_TOKEN`, `WBW_ALLOW_PAID`,
+`BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE`, `WBW_PAUSE_MS`, `WBW_CHROME`). Alles
+andere in der Quelldatei — etwa ein Coolify-Verwaltungstoken — bleibt garantiert
+draußen; auch das ist geprüft.
+
+Der Preis dafür, deutlich gesagt: **die so gebaute `.plugin`-Datei ist ab dann so
+vertraulich wie das Passwort selbst.** Nicht ins Repository (dieses ist öffentlich),
+nicht per Mail, nicht weitergeben. Das normale `./bauen.sh` ohne den Schalter baut
+weiterhin ein Paket ohne Zugangsdaten und bricht ab, falls doch eines hineingerät.
+
+**3. Datei im Benutzerprofil** (`~/.claude/wbw-vergleichsfahrzeuge.env`) — der Weg
+für den eigenen Rechner. In einer Cloud-Sitzung nützt er nichts: dort gibt es
+dieses Benutzerprofil nicht.
+
+Die Wege lassen sich mischen. Gefunden werden **alle** Dateien der Suchreihenfolge,
+und je Schlüssel gewinnt die erste Nennung — eine `.env` im Arbeitsordner kann also
+einzelne Werte des Pakets überschreiben, ohne die übrigen zu verlieren. Gesetzte
+Umgebungsvariablen schlagen weiterhin jede Datei.
+
 ### Wenn es nicht läuft: die Umgebungsprüfung
 
 Der häufigste Fall ist „ich habe die Zugangsdaten doch hinterlegt, trotzdem

@@ -94,8 +94,14 @@ async function main() {
   console.log(`  Arbeitsordner  : ${process.cwd()}`);
   console.log("");
 
-  console.log("Zugangsdaten-Datei");
-  console.log(benutzt ? `  benutzt: ${benutzt}` : "  KEINE gefunden");
+  const alleBenutzt = gemeinsam.envDateienBenutzt();
+  console.log("Zugangsdaten-Dateien");
+  if (alleBenutzt.length === 0) {
+    console.log("  KEINE gefunden");
+  } else {
+    // Mehrere Dateien werden zusammengefuehrt: je Schluessel gewinnt die erste.
+    for (const d of alleBenutzt) console.log(`  benutzt: ${d}`);
+  }
   console.log("  gesucht wurde in dieser Reihenfolge (erste gefundene gewinnt):");
   for (const p of [...new Set(pfade)]) {
     console.log(`    ${fs.existsSync(p) ? "[vorhanden]" : "[fehlt]    "} ${p}`);

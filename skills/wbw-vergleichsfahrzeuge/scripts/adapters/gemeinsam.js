@@ -51,11 +51,25 @@ function envSuchpfade(startVerzeichnis) {
   ].filter(Boolean);
 }
 
+// Liest ALLE gefundenen Dateien in der Suchreihenfolge, je Schluessel gewinnt
+// die erste Nennung. Frueher wurde nur die erste Datei gelesen und dann
+// abgebrochen - das kostete den Fall, in dem eine fremde .env im Arbeitsordner
+// liegt (fuer irgendein anderes Projekt) und die Zugangsdaten des Plugins damit
+// vollstaendig verdeckt, obwohl sie gar keine KA_-Schluessel enthaelt.
+//
+// Rueckgabe: die Datei, aus der der erste Wert kam (fuer Meldungen), oder null.
+// Die vollstaendige Liste liefert envDateienBenutzt() nach dem Aufruf.
+let ENV_DATEIEN_BENUTZT = [];
+function envDateienBenutzt() { return ENV_DATEIEN_BENUTZT.slice(); }
+
 function ladeEnv(startVerzeichnis) {
   const fs = require("fs");
+  const benutzte = [];
   for (const datei of envSuchpfade(startVerzeichnis)) {
     let roh;
     try { roh = fs.readFileSync(datei, "utf8"); } catch { continue; }
+    if (benutzte.includes(datei)) continue;   // Suchpfade koennen sich ueberschneiden
+    let etwasUebernommen = false;
     for (const zeile of roh.split(/\r?\n/)) {
       const s = zeile.trim();
       if (!s || s.startsWith("#")) continue;
@@ -64,13 +78,14 @@ function ladeEnv(startVerzeichnis) {
       const k = s.slice(0, i).trim();
       let v = s.slice(i + 1).trim();
       if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-      // Bereits gesetzte Variablen gewinnen: eine Datei darf nie eine bewusst
-      // gesetzte Umgebungsvariable ueberschreiben.
-      if (v !== "" && process.env[k] === undefined) process.env[k] = v;
+      // Bereits gesetzte Variablen gewinnen: weder eine spaetere Datei noch eine
+      // Datei ueberhaupt darf eine bewusst gesetzte Umgebungsvariable ueberschreiben.
+      if (v !== "" && process.env[k] === undefined) { process.env[k] = v; etwasUebernommen = true; }
     }
-    return datei;   // erste gefundene Datei gewinnt
+    if (etwasUebernommen) benutzte.push(datei);
   }
-  return null;
+  ENV_DATEIEN_BENUTZT = benutzte;
+  return benutzte.length ? benutzte[0] : null;
 }
 
 /** Fester Ort fuer Zugangsdaten, der Plugin-Updates ueberlebt. */
@@ -298,7 +313,7 @@ function leeresFahrzeug(quelle) {
 }
 
 module.exports = {
-  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv, globaleEnvDatei, envSuchpfade, fehlendeZugangsdaten,
+  BROWSER_HEADERS, PAUSE_MS, pause, proxyAgent, ladeEnv, envDateienBenutzt, globaleEnvDatei, envSuchpfade, fehlendeZugangsdaten,
   zahl, ez, plz, ausstattung,
   hole, holeJson, dedupe, leeresFahrzeug,
 };
