@@ -192,10 +192,32 @@ Nicht abschließend belegt ist die Ursache: dass es die Speichererschöpfung dur
 zweiten Scraper war, ist die naheliegende Erklärung und passt zum zeitlichen Verlauf,
 aber Serverkennzahlen gibt die Coolify-API nicht heraus.
 
-Was **noch nicht** belegt ist: ein echter Datenlauf über den neuen Stack. Der eine
-Versuch endete im Ausfall. Die Domain ist deshalb **nicht** umgehängt — sie zeigt
-weiter auf die alte Anwendung, und `ka-passwort-setzen.sh` bleibt bis zur vollzogenen
-Umschaltung der Weg für einen Passwortwechsel.
+**Umschaltung am 07.09.2026 — vollzogen.** Diesmal ohne Parallelbetrieb: alte
+Anwendung gestoppt, dann den neuen Stack allein gestartet, mit den oben genannten
+Speicherlimits. Gemessen, in dieser Reihenfolge:
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| Zugriffsschutz Testadresse | 401 / 401 / 200, `charset="UTF-8"` |
+| echter L1-Lauf über den neuen Stack | 8 Treffer, 8 mit Preis und Kilometerstand |
+| Server während des Laufs | `is_usable = true`, andere Anwendungen < 1 s |
+| Domain umgehängt | `ka-api.gollenstede.app` → Dienst `auth` |
+| Zugriffsschutz Produktionsadresse | 401 / 401 / 200, `charset="UTF-8"` |
+| echter Skill-Lauf über `KA_API_BASE` | 8 Treffer, 8 mit Preis und Kilometerstand |
+| Passwortwechsel per Umgebungsvariable | altes Passwort 401, neues 200 |
+
+Der Zugriffsschutz hängt damit an `KA_API_USER` und `KA_API_PASS` in Coolify. Der
+Passwortwechsel ist: Wert im Reiter *Environment Variables* ändern, Redeploy, denselben
+Wert in die `.env` — mehr nicht. `ka-passwort-setzen.sh` und der Labelsatz werden dafür
+nicht mehr gebraucht.
+
+**Die alte Anwendung `ka-api` (`cscqzonjs5idabs6an5a3x5c`) ist gestoppt, nicht
+gelöscht.** Sie trägt weiterhin den alten Labelsatz mit
+`Host(ka-api.gollenstede.app)`. Wird sie versehentlich gestartet, streiten sich zwei
+Traefik-Router um denselben Hostnamen, und es laufen wieder zwei Chromium-Scraper auf
+einem 4-GB-Server — genau die Kombination, die den Ausfall verursacht hat. Sie sollte
+erst gelöscht werden, wenn der neue Stack sich ein paar Tage bewährt hat, und bis
+dahin gestoppt bleiben.
 
 Der alte Aufbau bleibt bis dahin unangetastet. Coolifys Feld
 `http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
