@@ -100,6 +100,33 @@ finden:
 Wird **keine** Datei gefunden, nennt die Fehlermeldung jeden geprüften Pfad —
 damit die Ursache nicht im Skill gesucht wird, wenn die Datei nur woanders liegt.
 
+#### Ohne Datei: Zugangsdaten in `settings.json`
+
+Wer gar keine Datei anlegen will, trägt die Werte in `~/.claude/settings.json`
+unter `env` ein. Claude Code setzt sie dann als Umgebungsvariablen, und die haben
+**immer Vorrang** vor jeder `.env`:
+
+```json
+{
+  "env": {
+    "KA_API_BASE": "https://ka-api.gollenstede.app",
+    "KA_API_USER": "wbw",
+    "KA_API_PASS": "…",
+    "APIFY_TOKEN": "apify_api_…",
+    "WBW_ALLOW_PAID": "1"
+  }
+}
+```
+
+Nachgemessen: liegt derselbe Schlüssel in einer `.env` **und** in der Umgebung,
+gewinnt die Umgebung. Beide Wege lassen sich also mischen — etwa die selten
+wechselnden Werte in `settings.json`, ein Passwort für einen einzelnen Vorgang
+per `.env` im Arbeitsordner.
+
+Ein Unterschied, der zählt: `settings.json` ist eine Klartextdatei ohne
+besondere Rechte, `~/.claude/wbw-vergleichsfahrzeuge.env` lässt sich mit
+`chmod 600` absichern. Für Passwörter ist die `.env` deshalb die sauberere Wahl.
+
 Bereits gesetzte Umgebungsvariablen haben immer Vorrang. Beim Sessionstart meldet
 das Plugin, welche Datei es benutzt hat und welche Stufen damit nutzbar sind:
 
