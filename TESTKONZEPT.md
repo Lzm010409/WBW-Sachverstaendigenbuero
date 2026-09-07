@@ -67,7 +67,7 @@ Aufbaus — **`npm test` darf niemals einen kostenpflichtigen Apify-Lauf auslös
 
 | Befehl | Umfang | Netz | Kosten |
 |---|---|---|---|
-| `npm test` | E1 + E2 + E3 | nein | keine |
+| `npm test` | E1 + E2 + E3 + E5 + E6 + NF (inkl. Cloud-Betrieb, Hook, Paketbau) | nein | keine |
 | `npm run test:schema` | Schema-Wächter (E2b) | ja | keine |
 | `npm run test:live` | E4 je Adapter, nur L0–L2 | ja | keine |
 | `npm run test:l3` | L3/Apify, einzeln, explizit | ja | **kostenpflichtig** |
@@ -347,6 +347,14 @@ Pfad, niemals den Query-String.
 
 Zusätzlich ein Test, der `.env.example` gegen `.env` abgleicht — jede dort
 benötigte Variable muss im Beispiel dokumentiert sein, mit Platzhalter statt Wert.
+
+Für den Cloud-Betrieb (`tests/nf-cloud.test.js`) kommt der **Paketbau** dazu:
+`bauen.sh --mit-zugangsdaten` wird mit einer Quelldatei gefahren, die neben den
+erlaubten Variablen ein fremdes Token enthält. Erwartung: nur die erlaubten
+Variablen stehen in der `.env` des Pakets, das Fremdtoken nirgends, das Passwort
+genau einmal. Ein zweiter Lauf mit einem Passwort in der README muss abbrechen,
+ohne ein Paket zu hinterlassen. Ausserdem: der SessionStart-Hook und
+`pruefe-umgebung.js` geben in keiner Betriebsart ein Passwort aus.
 
 ### Idempotenz
 

@@ -8,6 +8,11 @@
 # Der Hook tut deshalb zwei Dinge:
 #   1. Er meldet, welche Beschaffungsstufen mit den vorhandenen Zugangsdaten nutzbar
 #      sind. Ohne das faellt erst mitten im Lauf auf, dass eine Variable fehlt.
+#      Die Meldung kommt aus pruefe-umgebung.js --kurz und damit aus GENAU der
+#      Suchlogik, die fetch-portal.js spaeter benutzt (Umgebungsvariablen zuerst,
+#      dann .env im Arbeitsordner, Benutzerprofil, Plugin-Wurzel). Frueher hatte
+#      der Hook eine eigene, kuerzere Liste - und meldete in der Cloud "fehlen",
+#      obwohl der Lauf die Werte gefunden haette.
 #   2. Er sucht ein Chromium und exportiert WBW_CHROME. Ohne das erzeugt run-report.js
 #      still nur HTML statt PDF, weil in Container-Umgebungen kein Chrome im
 #      Standardpfad liegt.
@@ -15,7 +20,13 @@
 # Idempotent, ohne Netzzugriff, ohne Rueckfragen. Laeuft in unter einer Sekunde.
 set -uo pipefail
 
-WURZEL="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+# Plugin-Wurzel: von Claude Code gesetzt (Plugin-Installation) oder aus dem
+# eigenen Pfad abgeleitet (Arbeit aus dem Repo, Projekt-Hook in .claude/settings.json).
+HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN="${CLAUDE_PLUGIN_ROOT:-$(cd "$HIER/.." && pwd)}"
+# Arbeitsordner der Sitzung: dort sucht der Lauf spaeter zuerst nach einer .env.
+WURZEL="${CLAUDE_PROJECT_DIR:-$PWD}"
+SC="$PLUGIN/skills/wbw-vergleichsfahrzeuge/scripts"
 
 # --- Node vorhanden? ----------------------------------------------------------
 if command -v node >/dev/null 2>&1; then
@@ -25,29 +36,15 @@ else
   exit 0     # Hooks duerfen den Sessionstart nicht abbrechen
 fi
 
-# --- Zugangsdaten nur zum Melden lesen (ueberschreibt nichts) -----------------
-# Dieselbe Reihenfolge wie ladeEnv() in adapters/gemeinsam.js: Arbeitsordner
-# zuerst, dann der feste Ort im Benutzerprofil, der Plugin-Updates ueberlebt.
-GLOBAL="$HOME/.claude/wbw-vergleichsfahrzeuge.env"
-KA=""; APIFY=""; BRIGHT=""; QUELLE=""
-for DATEI in "$WURZEL/.env" "$GLOBAL"; do
-  [ -f "$DATEI" ] || continue
-  [ -z "$QUELLE" ] && QUELLE="$DATEI"
-  [ -z "$KA" ]     && KA="$(grep -E '^KA_API_BASE=.+' "$DATEI" 2>/dev/null | head -1)"
-  [ -z "$APIFY" ]  && APIFY="$(grep -E '^APIFY_TOKEN=.+' "$DATEI" 2>/dev/null | head -1)"
-  [ -z "$BRIGHT" ] && BRIGHT="$(grep -E '^BRIGHTDATA_TOKEN=.+' "$DATEI" 2>/dev/null | head -1)"
-done
-[ -n "${KA_API_BASE:-}" ]      && KA="gesetzt"
-[ -n "${APIFY_TOKEN:-}" ]      && APIFY="gesetzt"
-[ -n "${BRIGHTDATA_TOKEN:-}" ] && BRIGHT="gesetzt"
-
 # --- Chromium fuer die PDF-Erzeugung finden -----------------------------------
 if [ -n "${WBW_CHROME:-}" ]; then
   CHROME="$WBW_CHROME"          # bereits gesetzt - dann gilt der Wert
 else
+  CHROME=""
   for KANDIDAT in \
     /opt/pw-browsers/chromium-*/chrome-linux/chrome \
     "$(command -v google-chrome 2>/dev/null)" \
+    "$(command -v google-chrome-stable 2>/dev/null)" \
     "$(command -v chromium 2>/dev/null)" \
     "$(command -v chromium-browser 2>/dev/null)"
   do
@@ -63,13 +60,16 @@ fi
 
 # --- Kurzmeldung in den Sessionkontext ----------------------------------------
 echo "WBW-Vergleichsfahrzeug-Finder bereit (Node $NODE_V, keine Abhaengigkeiten zu installieren)."
-echo "  Beschaffungsstufen:"
-echo "    L0 AutoScout24    : nutzbar (keine Zugangsdaten noetig)"
-echo "    L1 Kleinanzeigen  : $([ -n "$KA" ] && echo 'nutzbar' || echo 'KA_API_BASE/KA_API_USER/KA_API_PASS fehlen')"
-echo "    L2 Bright Data    : $([ -n "$BRIGHT" ] && echo 'Token vorhanden' || echo 'deaktiviert (kein Token)')"
-echo "    L3 Apify          : $([ -n "$APIFY" ] && echo 'Token vorhanden - Lauf zusaetzlich mit WBW_ALLOW_PAID=1 freischalten' || echo 'APIFY_TOKEN fehlt (nur fuer mobile.de noetig)')"
+if [ -f "$SC/pruefe-umgebung.js" ]; then
+  # Im Arbeitsordner ausfuehren und die Plugin-Wurzel durchreichen - so sieht die
+  # Pruefung dieselben Pfade wie der spaetere Lauf. Gibt nie Passwoerter aus.
+  ( cd "$WURZEL" 2>/dev/null || true; CLAUDE_PLUGIN_ROOT="$PLUGIN" node "$SC/pruefe-umgebung.js" --kurz 2>&1 ) \
+    || echo "  Umgebungspruefung fehlgeschlagen - bitte 'node \"$SC/pruefe-umgebung.js\"' von Hand ausfuehren."
+else
+  echo "  pruefe-umgebung.js fehlt unter $SC - Plugin unvollstaendig?"
+fi
 echo "  PDF-Erzeugung      : ${CHROME:-kein Chromium gefunden - Report bleibt HTML}"
-echo "  Zugangsdaten aus   : ${QUELLE:-keine Datei gefunden - siehe $GLOBAL}"
+echo "  Umgebungspruefung  : node \"$SC/pruefe-umgebung.js\" --netz"
 # Die Testsuite gehoert zum Repo, nicht zum ausgelieferten Plugin. Nur melden,
 # wenn sie tatsaechlich danebenliegt - sonst waere der Hinweis in einer reinen
 # Plugin-Installation eine Sackgasse.

@@ -157,10 +157,67 @@ unerreichbarer Dienst ergibt 502 statt 200, ohne Zugangsdaten in der Umgebung st
 der Vorschalter gar nicht erst. Dazu die echte Kette `kleinanzeigen.js` → Vorschalter
 → Dienst, einmal mit richtigem und einmal mit falschem Passwort.
 
-Was **nicht** belegt ist: der Aufbau ist nie in Coolify ausgerollt worden. In der
-Umgebung, in der er entstand, gab es keinen Docker-Daemon und keine Schreibrechte auf
-die Coolify-API. Solange die Migration nicht gelaufen ist, schützt weiterhin der
-Labelsatz, und `ka-passwort-setzen.sh` bleibt der Weg für einen Passwortwechsel.
+**Erster Ausrollversuch am 06.09.2026 — und was dabei schiefging.** Der Stack lief
+(Anwendung `ka-api-auth`, `m10snfb0ac1qdlerm8k47oem`), der Zugriffsschutz stimmte:
+gegen `https://ka-api-neu.116.202.21.243.sslip.io` kamen 401 / 401 / 200, mit
+`www-authenticate: Basic realm="WBW-Beschaffung", charset="UTF-8"` und dem Körper
+`401 Zugangsdaten erforderlich` — also nachweislich der Vorschalter und nicht mehr
+Traefik. Der Docker-HEALTHCHECK meldete `running:healthy`, was ohne gesetzte
+Umgebungsvariablen unmöglich ist.
+
+Dann kam ein echter Lauf über `fetch-portal.js` — und damit lief ein **zweiter**
+Chromium-Scraper neben dem produktiven auf demselben Server. Innerhalb weniger Minuten:
+HTTP 502 vom Vorschalter, danach beide ka-api-Container weg, und Coolify verlor die
+SSH-Verbindung zum Server („Connection timed out during banner exchange"). Andere
+Anwendungen auf derselben Maschine (`schulranzen`) antworteten weiter in unter einer
+Sekunde — es war also kein Netz- oder Traefik-Ausfall.
+
+Der Produktionsdienst war rund 20 Minuten nicht erreichbar. Wiederhergestellt durch
+Stoppen des neuen Stacks und Neustart der alten Anwendung; belegt mit 401 / 401 / 200
+und einem echten L1-Lauf mit 8 Treffern, davon 8 mit Preis und Kilometerstand.
+
+**Daraus zwei Regeln.**
+
+1. **Nie zwei ka-api-Instanzen gleichzeitig auf diesem Server.** Der Dienst startet
+   pro Suche einen Chromium. Zwei davon parallel überlasten die Maschine so weit, dass
+   selbst SSH ausfällt. Die Umschaltung ist deshalb **erst alt stoppen, dann neu
+   starten** — kein Parallelbetrieb zum Vergleichen, auch nicht kurz.
+2. **Der Stack braucht ein Speicherlimit.** Ohne `mem_limit` kann der Scraper die
+   ganze Maschine mitnehmen, statt selbst beendet zu werden. Ein sinnvoller Wert setzt
+   voraus, dass man den Arbeitsspeicher des Servers kennt — der ist über die
+   Coolify-API nicht abrufbar. Bis dahin bleibt die Compose-Datei ohne Limit, und das
+   ist eine bekannte offene Flanke, keine Auslassung.
+
+Nicht abschließend belegt ist die Ursache: dass es die Speichererschöpfung durch den
+zweiten Scraper war, ist die naheliegende Erklärung und passt zum zeitlichen Verlauf,
+aber Serverkennzahlen gibt die Coolify-API nicht heraus.
+
+**Umschaltung am 07.09.2026 — vollzogen.** Diesmal ohne Parallelbetrieb: alte
+Anwendung gestoppt, dann den neuen Stack allein gestartet, mit den oben genannten
+Speicherlimits. Gemessen, in dieser Reihenfolge:
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| Zugriffsschutz Testadresse | 401 / 401 / 200, `charset="UTF-8"` |
+| echter L1-Lauf über den neuen Stack | 8 Treffer, 8 mit Preis und Kilometerstand |
+| Server während des Laufs | `is_usable = true`, andere Anwendungen < 1 s |
+| Domain umgehängt | `ka-api.gollenstede.app` → Dienst `auth` |
+| Zugriffsschutz Produktionsadresse | 401 / 401 / 200, `charset="UTF-8"` |
+| echter Skill-Lauf über `KA_API_BASE` | 8 Treffer, 8 mit Preis und Kilometerstand |
+| Passwortwechsel per Umgebungsvariable | altes Passwort 401, neues 200 |
+
+Der Zugriffsschutz hängt damit an `KA_API_USER` und `KA_API_PASS` in Coolify. Der
+Passwortwechsel ist: Wert im Reiter *Environment Variables* ändern, Redeploy, denselben
+Wert in die `.env` — mehr nicht. `ka-passwort-setzen.sh` und der Labelsatz werden dafür
+nicht mehr gebraucht.
+
+**Die alte Anwendung `ka-api` (`cscqzonjs5idabs6an5a3x5c`) ist gestoppt, nicht
+gelöscht.** Sie trägt weiterhin den alten Labelsatz mit
+`Host(ka-api.gollenstede.app)`. Wird sie versehentlich gestartet, streiten sich zwei
+Traefik-Router um denselben Hostnamen, und es laufen wieder zwei Chromium-Scraper auf
+einem 4-GB-Server — genau die Kombination, die den Ausfall verursacht hat. Sie sollte
+erst gelöscht werden, wenn der neue Stack sich ein paar Tage bewährt hat, und bis
+dahin gestoppt bleiben.
 
 Der alte Aufbau bleibt bis dahin unangetastet. Coolifys Feld
 `http_basic_auth_username` zeigt zwar `wbw` an, ist aber funktionslos
@@ -272,18 +329,22 @@ Testlauf kann also auch so keinen Actor starten.
 
 ## Umgebungsvariablen
 
-Alle in der `.env` (gitignoriert), Vorlage in `.env.example`.
-**`fetch-portal.js` liest die Datei selbst** — vom Arbeitsordner aus aufwärts bis
-zur Plugin-Wurzel; die erste gefundene gewinnt. Ein Export von Hand ist nicht
-nötig. Bereits gesetzte Umgebungsvariablen haben Vorrang, eine Datei überschreibt
-also nie eine bewusst gesetzte Variable. Mit `WBW_ENV_DATEI` lässt sich ein
-abweichender Pfad erzwingen. Welche Datei benutzt wurde, steht in der Ausgabe.
+Gesetzte Umgebungsvariablen gewinnen immer (Cloud-Umgebung, `settings.json`,
+Shell); leere zählen als nicht gesetzt. Dateien sind der zweite Weg, Vorlage in
+`.env.example`. **`fetch-portal.js` liest sie selbst** — Arbeitsordner aufwärts,
+Benutzerprofil, Plugin-Wurzel (dort liegt die mit `bauen.sh --mit-zugangsdaten`
+eingebaute `.env`); alle gefundenen Dateien werden gelesen, je Schlüssel gewinnt
+die erste Nennung. Ein Export von Hand ist nicht nötig. Mit `WBW_ENV_DATEI` lässt
+sich ein abweichender Pfad erzwingen. Welche Dateien benutzt wurden und woher jeder
+Wert stammt, zeigt `pruefe-umgebung.js`. `KA_API_BASE` hat den eingebauten
+Standardwert `https://ka-api.gollenstede.app` und muss nur zum Überschreiben
+gesetzt werden.
 
 **Wer liest was — die Zuständigkeit ist strikt getrennt:**
 
 | Variable | gelesen von | wofür |
 | --- | --- | --- |
-| `KA_API_BASE`, `KA_API_USER`, `KA_API_PASS` | `adapters/kleinanzeigen.js` | **nur** Kleinanzeigen (L1) |
+| `KA_API_USER`, `KA_API_PASS` (+ optional `KA_API_BASE`) | `adapters/kleinanzeigen.js` | **nur** Kleinanzeigen (L1) |
 | `APIFY_TOKEN` | `adapters/apify.js` | **nur** L3, also produktiv nur mobile.de |
 | `BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE` | `adapters/unlocker.js` | L2 (derzeit deaktiviert) |
 
@@ -293,7 +354,7 @@ ausschließlich mit dem eigenen Dienst.
 
 | Variable                          | Wofür                                    |
 | --------------------------------- | ---------------------------------------- |
-| `KA_API_BASE`                     | Basis-URL des eigenen Kleinanzeigen-Dienstes |
+| `KA_API_BASE`                     | Basis-URL des eigenen Dienstes (optional, Standard eingebaut) |
 | `KA_API_USER` / `KA_API_PASS`     | Basic Auth davor                         |
 | `BRIGHTDATA_TOKEN` / `..._ZONE`   | L2                                       |
 | `APIFY_TOKEN`                     | L3                                       |

@@ -26,6 +26,12 @@ const { holeJson, pause, zahl, ez, ausstattung, dedupe, leeresFahrzeug, fehlende
 const QUELLE = "kleinanzeigen";
 const PORTAL = "https://www.kleinanzeigen.de";
 
+// Standardadresse des eigenen Dienstes. Kein Geheimnis (steht in .env.example und
+// im README); nur die Zugangsdaten sind vertraulich. Der Standardwert nimmt einer
+// Cloud-Umgebung eine Variable ab: dort muessen nur noch KA_API_USER und
+// KA_API_PASS gesetzt werden. KA_API_BASE bleibt fuer Testadressen ueberschreibbar.
+const KA_API_BASE_STANDARD = "https://ka-api.gollenstede.app";
+
 const slug = (s) => String(s || "").toLowerCase().trim()
   .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
   .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -134,7 +140,7 @@ function authKopf() {
  * (der Dienst selbst pausiert nur zwischen SEITEN der Trefferliste).
  */
 async function holen(eingaben, opts = {}) {
-  const basis = String(opts.endpoint || process.env.KA_API_BASE || "").replace(/\/+$/, "");
+  const basis = String(opts.endpoint || process.env.KA_API_BASE || KA_API_BASE_STANDARD).replace(/\/+$/, "");
   if (!basis) throw fehlendeZugangsdaten("Kleinanzeigen L1", ["KA_API_BASE"]);
   const maxItems = opts.maxItems ?? ((eingaben.kleinanzeigen && eingaben.kleinanzeigen.limit) || 60);
   const maxSeiten = Math.min(opts.maxSeiten ?? 3, 20);
@@ -194,4 +200,4 @@ async function holen(eingaben, opts = {}) {
   };
 }
 
-module.exports = { holen, bauSuchUrl, mappe, findeItems, leistungKw, QUELLE, PORTAL };
+module.exports = { holen, bauSuchUrl, mappe, findeItems, leistungKw, QUELLE, PORTAL, KA_API_BASE_STANDARD };

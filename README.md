@@ -70,14 +70,26 @@ Repo. Node.js muss vorhanden sein — sonst nichts, es gibt keine Abhängigkeite
 
 ### Zugangsdaten hinterlegen
 
-Die Zugangsdaten gehören **nicht** in den Plugin-Ordner: der wird bei jedem
-Plugin-Update ersetzt und die Datei wäre weg. Stattdessen an den festen Ort im
-Benutzerprofil:
+Der Skill liest seine Zugangsdaten aus **Umgebungsvariablen**; eine `.env`-Datei
+ist nur ein Weg, diese Variablen zu setzen. Gesetzte Umgebungsvariablen haben
+**immer** Vorrang vor jeder Datei. Eine **leer** gesetzte Variable (`KA_API_PASS=`)
+zählt dabei als nicht gesetzt und verdeckt keine Datei — das passiert leicht, wenn
+ein Umgebungs-Formular oder ein `env`-Block alle Namen aus `.env.example` durchreicht.
+
+Nötig sind nur zwei Werte für Kleinanzeigen und einer für mobile.de:
+
+| Variable | Pflicht? |
+| --- | --- |
+| `KA_API_USER`, `KA_API_PASS` | für L1 — Kleinanzeigen |
+| `APIFY_TOKEN` (+ `WBW_ALLOW_PAID=1`) | für L3 — mobile.de |
+| `KA_API_BASE` | **optional** — Standardwert `https://ka-api.gollenstede.app` ist eingebaut |
+
+Auf dem **eigenen Rechner** gehören sie **nicht** in den Plugin-Ordner (der wird
+bei jedem Plugin-Update ersetzt), sondern an den festen Ort im Benutzerprofil:
 
 ```bash
 mkdir -p ~/.claude
 cat > ~/.claude/wbw-vergleichsfahrzeuge.env <<'EOF'
-KA_API_BASE=https://ka-api.gollenstede.app
 KA_API_USER=wbw
 KA_API_PASS=…
 APIFY_TOKEN=apify_api_…
@@ -86,33 +98,170 @@ EOF
 chmod 600 ~/.claude/wbw-vergleichsfahrzeuge.env
 ```
 
-Die Skripte suchen in dieser Reihenfolge und nehmen die **erste** Datei, die sie
-finden:
+In einer **Cloud-Sitzung** gibt es dieses Benutzerprofil nicht — dort gelten die
+Wege unter „In der Cloud betreiben".
+
+Die Skripte lesen **alle** Dateien dieser Reihenfolge; je Schlüssel gewinnt die
+erste Nennung:
 
 1. `$WBW_ENV_DATEI` — ausdrücklich gesetzter Pfad
 2. `.env` im Arbeitsordner, dann aufwärts (für einen einzelnen Vorgang)
-3. `~/.claude/wbw-vergleichsfahrzeuge.env` — **der empfohlene Ort**
+3. `~/.claude/wbw-vergleichsfahrzeuge.env` — **der empfohlene Ort auf dem eigenen Rechner**
 4. `~/.claude/.env` — funktioniert genauso
 5. `~/.claude/wbw.env`, `~/.wbw-vergleichsfahrzeuge.env`
-6. `$CLAUDE_PLUGIN_ROOT/.env`
-7. `.env` neben den Skripten, aufwärts (Entwicklung aus dem Repo)
+6. `$CLAUDE_PLUGIN_ROOT/.env` — die mit `--mit-zugangsdaten` eingebaute Datei
+7. `.env` neben den Skripten, aufwärts (Entwicklung aus dem Repo; findet die
+   Plugin-Wurzel auch dann, wenn `CLAUDE_PLUGIN_ROOT` nicht gesetzt ist)
 
-Wird **keine** Datei gefunden, nennt die Fehlermeldung jeden geprüften Pfad —
-damit die Ursache nicht im Skill gesucht wird, wenn die Datei nur woanders liegt.
+Wird **nichts** gefunden, nennt die Fehlermeldung jeden geprüften Pfad und den
+Cloud-Weg — damit die Ursache nicht im Skill gesucht wird, wenn die Datei nur
+woanders liegt.
 
-Bereits gesetzte Umgebungsvariablen haben immer Vorrang. Beim Sessionstart meldet
-das Plugin, welche Datei es benutzt hat und welche Stufen damit nutzbar sind:
+#### Ohne Datei: Zugangsdaten in `settings.json`
+
+Wer gar keine Datei anlegen will, trägt die Werte in `~/.claude/settings.json`
+unter `env` ein. Claude Code setzt sie dann als Umgebungsvariablen, und die haben
+**immer Vorrang** vor jeder `.env`:
+
+```json
+{
+  "env": {
+    "KA_API_USER": "wbw",
+    "KA_API_PASS": "…",
+    "APIFY_TOKEN": "apify_api_…",
+    "WBW_ALLOW_PAID": "1"
+  }
+}
+```
+
+Nachgemessen: liegt derselbe Schlüssel in einer `.env` **und** in der Umgebung,
+gewinnt die Umgebung. Beide Wege lassen sich also mischen — etwa die selten
+wechselnden Werte in `settings.json`, ein Passwort für einen einzelnen Vorgang
+per `.env` im Arbeitsordner.
+
+Ein Unterschied, der zählt: `settings.json` ist eine Klartextdatei ohne
+besondere Rechte, `~/.claude/wbw-vergleichsfahrzeuge.env` lässt sich mit
+`chmod 600` absichern. Für Passwörter ist die `.env` deshalb die sauberere Wahl.
+
+Beim Sessionstart meldet das Plugin, woher die Zugangsdaten kommen und welche
+Stufen damit nutzbar sind. Die Meldung stammt aus `pruefe-umgebung.js --kurz` und
+damit aus **derselben** Suchlogik wie der spätere Lauf — sie kann nicht „fehlt"
+melden, wo `fetch-portal.js` fündig würde:
 
 ```
 WBW-Vergleichsfahrzeug-Finder bereit (Node v22.22.2, keine Abhaengigkeiten zu installieren).
   Beschaffungsstufen:
-    L0 AutoScout24    : nutzbar (keine Zugangsdaten noetig)
-    L1 Kleinanzeigen  : nutzbar
+    L0 AutoScout24    : nutzbar (braucht keine Zugangsdaten)
+    L1 Kleinanzeigen  : nutzbar (https://ka-api.gollenstede.app)
     L2 Bright Data    : deaktiviert (kein Token)
-    L3 Apify          : Token vorhanden
+    L3 Apify          : nutzbar
+  Zugangsdaten aus   : Umgebung (KA_API_USER, KA_API_PASS, APIFY_TOKEN)
   PDF-Erzeugung      : /usr/bin/chromium
-  Zugangsdaten aus   : /home/du/.claude/wbw-vergleichsfahrzeuge.env
+  Umgebungspruefung  : node ".../scripts/pruefe-umgebung.js" --netz
 ```
+
+### In der Cloud betreiben
+
+Der Skill läuft vollständig in einer Cloud-Sitzung — nachgemessen in einem
+Claude-Cloud-Container: AutoScout24, der eigene Kleinanzeigen-Dienst, Apify und
+zippopotam sind über den ausgehenden Proxy erreichbar (`gemeinsam.js` benutzt
+`HTTPS_PROXY` und das CA-Bündel aus `NODE_EXTRA_CA_CERTS`), und ein Chromium für
+die PDF-Erzeugung liegt unter `/opt/pw-browsers` bereit, das der Hook findet.
+Was fehlte, war ein verlässlicher Weg, die Zugangsdaten dorthin zu bekommen —
+ohne Benutzerprofil, ohne `.env` im Arbeitsordner. Dafür gibt es zwei Wege, die
+sich auch mischen lassen:
+
+**1. Umgebungsvariablen der Cloud-Umgebung (empfohlen).** Claude Code im Browser
+lässt pro Umgebung Umgebungsvariablen setzen; sie gelten für jede Sitzung in dieser
+Umgebung, auch für die Hooks und Bash-Aufrufe des Plugins. Eintragen:
+
+```
+KA_API_USER=wbw
+KA_API_PASS=…
+APIFY_TOKEN=apify_api_…      # nur für mobile.de
+WBW_ALLOW_PAID=1             # nur für mobile.de
+```
+
+`KA_API_BASE` ist nicht nötig, der Standardwert ist eingebaut. Siehe
+<https://code.claude.com/docs/en/claude-code-on-the-web>. Vorteil: die
+Zugangsdaten stecken in keiner Datei, die man versehentlich weitergibt, und ein
+Passwortwechsel ist eine Änderung an einer Stelle. Der Sessionstart-Hook zeigt dann
+`Zugangsdaten aus: Umgebung (KA_API_USER, KA_API_PASS, …)`.
+
+Für ein einzelnes Repo geht auch ein `env`-Block in dessen `.claude/settings.json`
+(so setzt dieses Repo `WBW_ALLOW_PAID`) — aber **keine Passwörter** in ein
+öffentliches Repo.
+
+**2. Zugangsdaten ins Paket bauen** (Cowork, oder wenn es keine Stelle für
+Umgebungsvariablen gibt):
+
+```bash
+./bauen.sh --mit-zugangsdaten                      # nimmt die .env dieses Ordners
+./bauen.sh --mit-zugangsdaten geheim.env meine.plugin
+# -> wbw-vergleichsfahrzeug-finder-VERTRAULICH.plugin (Rechte 600)
+```
+
+Dann liegt eine `.env` in der Plugin-Wurzel, und der Skill findet sie nach der
+Installation ohne jede weitere Einrichtung — belegt durch einen Test gegen eine
+ausgepackte Installation mit leerem Benutzerordner und leerem Arbeitsordner, mit
+und ohne gesetztes `CLAUDE_PLUGIN_ROOT`.
+
+Übernommen wird **nur** eine feste Liste von Variablen
+(`KA_API_BASE`, `KA_API_USER`, `KA_API_PASS`, `APIFY_TOKEN`, `WBW_ALLOW_PAID`,
+`BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE`, `WBW_PAUSE_MS`, `WBW_CHROME`), und nur mit
+Wert. Alles andere in der Quelldatei — etwa ein Coolify-Verwaltungstoken — bleibt
+garantiert draußen; ein Test baut ein Paket mit Fremdtoken und prüft, dass er
+nirgends darin steht. Steht ein Passwort außerhalb der `.env` im Paket (etwa
+versehentlich in einer README), bricht der Bau ab.
+
+Der Preis dafür, deutlich gesagt: **die so gebaute `.plugin`-Datei ist ab dann so
+vertraulich wie das Passwort selbst.** Nicht ins Repository (dieses ist öffentlich;
+`*.plugin` steht in `.gitignore`), nicht per Mail, nicht weitergeben. Das normale
+`./bauen.sh` ohne den Schalter baut weiterhin ein Paket ohne Zugangsdaten.
+
+Gesetzte Umgebungsvariablen schlagen auch die eingebaute Datei: ein neues Passwort
+in der Cloud-Umgebung gilt sofort, ohne das Paket neu zu bauen. Umgekehrt füllt
+die eingebaute Datei nur die Lücken — eine `.env` im Arbeitsordner kann einzelne
+Werte des Pakets überschreiben, ohne die übrigen zu verlieren.
+
+### Wenn es nicht läuft: die Umgebungsprüfung
+
+Der häufigste Fall ist „ich habe die Zugangsdaten doch hinterlegt, trotzdem
+0 Treffer". Statt zu raten, wo es klemmt:
+
+```bash
+node <plugin>/skills/wbw-vergleichsfahrzeuge/scripts/pruefe-umgebung.js --netz
+```
+
+Oder in Claude einfach: *„Führ die Umgebungsprüfung des WBW-Plugins aus."*
+
+Die Ausgabe nennt Betriebssystem und Benutzerordner, welche Datei benutzt wurde und
+welche Pfade vergeblich geprüft wurden, für jede Variable ob sie aus der Umgebung
+oder aus einer Datei kommt, welche Stufen damit nutzbar sind, ob ein Chrome gefunden
+wird — und mit `--netz`, ob der Kleinanzeigen-Dienst wirklich antwortet:
+
+```
+Zugangsdaten-Dateien
+  benutzt: /Users/du/.claude/wbw-vergleichsfahrzeuge.env
+Variablen
+  KA_API_BASE       https://ka-api.gollenstede.app   eingebauter Standardwert
+  KA_API_USER       wbw                              Umgebung (Cloud-Umgebung, settings.json oder Shell)
+  KA_API_PASS       gesetzt (20 Zeichen)             Datei /Users/du/.claude/…
+Beschaffungsstufen
+  L1 Kleinanzeigen : nutzbar (https://ka-api.gollenstede.app)
+  L3 Apify         : NICHT nutzbar - APIFY_TOKEN fehlt (nur fuer mobile.de noetig)
+Erreichbarkeit des Kleinanzeigen-Dienstes
+  https://ka-api.gollenstede.app antwortet mit 200 - Zugangsdaten stimmen
+```
+
+Passwörter und Token gibt sie **nie** aus, nur ihre Länge — die Ausgabe darf man
+gefahrlos weiterschicken.
+
+Der wichtigste Punkt, den sie klärt: **welcher Rechner** den Skill überhaupt
+ausführt. `~/.claude/settings.json` und `~/.claude/wbw-vergleichsfahrzeuge.env`
+liegen auf **Ihrem** Rechner. Läuft die Sitzung in einer Cloud-Umgebung
+(Claude Code im Browser, Cowork remote), sieht der Skill diese Dateien nicht — die
+Zeile „Benutzerordner" in der Prüfung zeigt sofort, wo er tatsächlich läuft.
 
 ### Als Datei (Cowork)
 
@@ -125,12 +274,13 @@ Cowork installiert Plugins aus einer `.plugin`-Datei. Bauen:
 
 Die Datei enthält nur Laufzeit-Bestandteile: `.claude-plugin/plugin.json`,
 `skills/`, `hooks/`, `README.md`, `.env.example`. **Nicht** enthalten sind die
-Tests, `.claude/` (das ist Projektkonfiguration dieses Repos) und selbstverständlich
-keine `.env`. Ein Sicherheitsnetz im Bauskript bricht ab, falls ein Wert aus der
-`.env` doch im Paket landen würde.
+Tests, `.claude/` (das ist Projektkonfiguration dieses Repos) und keine `.env`.
+Ein Sicherheitsnetz im Bauskript bricht ab, falls ein Wert aus der `.env` doch im
+Paket landen würde.
 
-Zugangsdaten kommen auch hier aus `~/.claude/wbw-vergleichsfahrzeuge.env` — die
-liegt ausserhalb des Plugins und überlebt jedes Update.
+Zugangsdaten kommen dann aus `~/.claude/wbw-vergleichsfahrzeuge.env` (eigener
+Rechner) oder aus Umgebungsvariablen. Für Cowork **remote** stattdessen mit
+`./bauen.sh --mit-zugangsdaten` bauen — siehe „In der Cloud betreiben".
 
 ### Aus dem Repo statt als Plugin
 
@@ -141,7 +291,8 @@ gefunden. `npm test` läuft ohne `npm install`.
 
 | Variable | Wofür | Nötig für |
 | --- | --- | --- |
-| `KA_API_BASE`, `KA_API_USER`, `KA_API_PASS` | eigener Kleinanzeigen-Dienst | **L1 — Kleinanzeigen** |
+| `KA_API_USER`, `KA_API_PASS` | eigener Kleinanzeigen-Dienst | **L1 — Kleinanzeigen** |
+| `KA_API_BASE` | Adresse des Dienstes, Standard `https://ka-api.gollenstede.app` | optional (nur zum Überschreiben) |
 | `APIFY_TOKEN` | Apify-REST-API | **L3 — produktiv nur mobile.de** |
 | `BRIGHTDATA_TOKEN`, `BRIGHTDATA_ZONE` | Web Unlocker | L2 (derzeit deaktiviert) |
 | `WBW_ALLOW_PAID=1` | Kostensperre lösen | jeder L3-Lauf — hier dauerhaft gesetzt |

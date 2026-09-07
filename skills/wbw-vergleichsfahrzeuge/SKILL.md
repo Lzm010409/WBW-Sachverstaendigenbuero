@@ -11,7 +11,7 @@ description: >
   Erstzulassung (±1 Jahr), Ausstattung und PLZ-Umkreis (±200 km) und exportiert
   einen PDF-Report mit Quellen-Linkliste.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # WBW-Vergleichsfahrzeug-Finder
@@ -20,9 +20,12 @@ Recherchiert vergleichbare Fahrzeuge für die Ermittlung des Wiederbeschaffungsw
 (WBW) und liefert einen druckfertigen Report plus Linkliste der verwendeten Inserate.
 
 Alle Scripts liegen unter `${CLAUDE_PLUGIN_ROOT}/skills/wbw-vergleichsfahrzeuge/scripts/`.
-Voraussetzungen: Node.js und eine `.env` mit den Zugangsdaten der Beschaffungsstufen
-(siehe `.env.example` und `references/beschaffung.md`). Apify wird nur noch als
-letzte Rückfallebene gebraucht. Arbeitsdateien in einen frischen Arbeitsordner schreiben,
+Voraussetzungen: Node.js und die Zugangsdaten der Beschaffungsstufen als
+Umgebungsvariablen — gesetzt in der Cloud-Umgebung, in `settings.json`, in einer
+`.env` im Arbeitsordner oder Benutzerprofil, oder in der mit
+`bauen.sh --mit-zugangsdaten` ins Plugin eingebauten `.env` (siehe `.env.example`
+und `references/beschaffung.md`). `KA_API_BASE` hat einen eingebauten Standardwert.
+Apify wird nur noch als letzte Rückfallebene gebraucht. Arbeitsdateien in einen frischen Arbeitsordner schreiben,
 z. B. `./wbw-<marke>-<modell>-<JJJJ-MM-TT>/`.
 
 ## Ablauf
@@ -147,6 +150,22 @@ schreibt ein vollständiges Protokoll. Dann: Eingabe prüfen, einmal erneut vers
 bleibt es leer, als dokumentierten Leerstand vermerken und mit den übrigen weitermachen.
 Exit-Code 2 heißt Bedienfehler (unbekanntes Portal, fehlender Eingabeblock) — dann
 nicht wiederholen, sondern die Eingabe korrigieren.
+
+**Nennt das Protokoll fehlende Zugangsdaten** (`KA_API_BASE`, `KA_API_USER`,
+`KA_API_PASS`, `APIFY_TOKEN`, `WBW_ALLOW_PAID`), dann melde das nicht einfach als
+Leerstand, sondern führe einmal die Umgebungsprüfung aus und gib ihre Ausgabe an den
+Nutzer weiter:
+
+```bash
+node "$SC/pruefe-umgebung.js" --netz
+```
+
+Sie zeigt, welche Datei benutzt wurde, welche Pfade vergeblich geprüft wurden, ob ein
+Wert aus der Umgebung oder aus einer Datei stammt und ob der Kleinanzeigen-Dienst
+tatsächlich antwortet. Passwörter gibt sie nie aus, nur ihre Länge — die Ausgabe darf
+also unverändert weitergereicht werden. Damit sieht der Nutzer sofort, ob die Datei am
+falschen Ort liegt, ob der Lauf überhaupt auf seinem Rechner stattfindet oder ob die
+Zugangsdaten abgelehnt werden.
 
 > **Tempo:** Kleinanzeigen ist der langsamste Teil, weil je Inserat eine Detailseite
 > geholt wird (Kilometerstand und Erstzulassung stehen nur dort) und zwischen den
