@@ -34,6 +34,10 @@ services:
       - "8080"
     depends_on:
       - api
+    # Der Vorschalter ist ein einzelnes Node-Skript ohne Abhaengigkeiten; mehr
+    # als das braucht er nie. Klein gehalten, damit im Zweifel Luft fuer den
+    # Scraper bleibt.
+    mem_limit: 128m
 
   api:
     # Unveraenderter Upstream (DanielWTE/ebay-kleinanzeigen-api, MIT), auf einen
@@ -45,3 +49,15 @@ services:
     # nicht auf dem Host und nicht ueber Traefik.
     expose:
       - "8000"
+    # Der Dienst startet pro Suche einen Chromium. Am 06.09.2026 hat genau das
+    # den Server (4 GB) so weit ueberlastet, dass selbst SSH ausfiel und die
+    # Produktion 20 Minuten weg war. Das Limit macht daraus einen beendeten
+    # Container statt einer stehenden Maschine - der Vorschalter meldet den
+    # Ausfall dann als 502 mit Begruendung im Log, und "restart: unless-stopped"
+    # holt den Dienst zurueck.
+    #
+    # 1,5 GB ist bemessen fuer einen headless Chromium mit einer Seite plus die
+    # Python-Anwendung. Faellt der Container unter Last reproduzierbar aus, ist
+    # der Wert zu knapp - dann erhoehen, nicht entfernen.
+    mem_limit: 1500m
+    memswap_limit: 1500m
