@@ -141,6 +141,44 @@ WBW-Vergleichsfahrzeug-Finder bereit (Node v22.22.2, keine Abhaengigkeiten zu in
   Zugangsdaten aus   : /home/du/.claude/wbw-vergleichsfahrzeuge.env
 ```
 
+### Wenn es nicht läuft: die Umgebungsprüfung
+
+Der häufigste Fall ist „ich habe die Zugangsdaten doch hinterlegt, trotzdem
+0 Treffer". Statt zu raten, wo es klemmt:
+
+```bash
+node <plugin>/skills/wbw-vergleichsfahrzeuge/scripts/pruefe-umgebung.js --netz
+```
+
+Oder in Claude einfach: *„Führ die Umgebungsprüfung des WBW-Plugins aus."*
+
+Die Ausgabe nennt Betriebssystem und Benutzerordner, welche Datei benutzt wurde und
+welche Pfade vergeblich geprüft wurden, für jede Variable ob sie aus der Umgebung
+oder aus einer Datei kommt, welche Stufen damit nutzbar sind, ob ein Chrome gefunden
+wird — und mit `--netz`, ob der Kleinanzeigen-Dienst wirklich antwortet:
+
+```
+Zugangsdaten-Datei
+  benutzt: /Users/du/.claude/wbw-vergleichsfahrzeuge.env
+Variablen
+  KA_API_BASE       https://ka-api.gollenstede.app   Datei /Users/du/.claude/…
+  KA_API_PASS       gesetzt (20 Zeichen)             Datei /Users/du/.claude/…
+Beschaffungsstufen
+  L1 Kleinanzeigen : nutzbar
+  L3 Apify         : NICHT nutzbar - APIFY_TOKEN fehlt
+Erreichbarkeit des Kleinanzeigen-Dienstes
+  https://ka-api.gollenstede.app antwortet mit 200 - Zugangsdaten stimmen
+```
+
+Passwörter und Token gibt sie **nie** aus, nur ihre Länge — die Ausgabe darf man
+gefahrlos weiterschicken.
+
+Der wichtigste Punkt, den sie klärt: **welcher Rechner** den Skill überhaupt
+ausführt. `~/.claude/settings.json` und `~/.claude/wbw-vergleichsfahrzeuge.env`
+liegen auf **Ihrem** Rechner. Läuft die Sitzung in einer Cloud-Umgebung
+(Claude Code im Browser, Cowork remote), sieht der Skill diese Dateien nicht — die
+Zeile „Benutzerordner" in der Prüfung zeigt sofort, wo er tatsächlich läuft.
+
 ### Als Datei (Cowork)
 
 Cowork installiert Plugins aus einer `.plugin`-Datei. Bauen:

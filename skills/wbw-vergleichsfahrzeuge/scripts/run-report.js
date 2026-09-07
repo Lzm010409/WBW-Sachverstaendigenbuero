@@ -37,15 +37,41 @@ function loadProtokoll(file, quelle) {
   } catch { return null; }
 }
 
-function tryPdf(htmlPath, pdfPath) {
-  const candidates = [
-    // Ausdrücklich gesetzter Pfad gewinnt (z. B. Container ohne System-Chrome).
-    process.env.WBW_CHROME, process.env.CHROME_PATH, process.env.PUPPETEER_EXECUTABLE_PATH,
+// Kandidatenpfade fuer Chrome/Chromium/Edge. Ausgelagert, damit die Liste
+// pruefbar ist: die Windows-Pfade haben lange gefehlt, und das Ergebnis war ein
+// "kein Chromium gefunden" auf Rechnern, auf denen Chrome installiert war.
+function chromeKandidaten(env = process.env, plattform = process.platform) {
+  const win = [
+    env["PROGRAMFILES"] && env["PROGRAMFILES"] + "\\Google\\Chrome\\Application\\chrome.exe",
+    env["PROGRAMFILES(X86)"] && env["PROGRAMFILES(X86)"] + "\\Google\\Chrome\\Application\\chrome.exe",
+    env.LOCALAPPDATA && env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe",
+    env["PROGRAMFILES(X86)"] && env["PROGRAMFILES(X86)"] + "\\Microsoft\\Edge\\Application\\msedge.exe",
+    env["PROGRAMFILES"] && env["PROGRAMFILES"] + "\\Microsoft\\Edge\\Application\\msedge.exe",
+    // Ohne gesetzte PROGRAMFILES-Variablen (etwa unter Git Bash) die ueblichen Orte.
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "chrome.exe", "msedge.exe",
+  ];
+  const mac = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-    "google-chrome", "chromium", "chromium-browser",
   ];
+  const unix = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"];
+  return [
+    // Ausdrücklich gesetzter Pfad gewinnt (z. B. Container ohne System-Chrome).
+    env.WBW_CHROME, env.CHROME_PATH, env.PUPPETEER_EXECUTABLE_PATH,
+    ...(plattform === "win32" ? win : []),
+    ...mac,
+    ...unix,
+    // Auch unter Git Bash/WSL kann ein Windows-Chrome erreichbar sein.
+    ...(plattform === "win32" ? [] : win.filter((p) => typeof p === "string" && p.startsWith("C:"))),
+  ].filter(Boolean);
+}
+
+function tryPdf(htmlPath, pdfPath) {
+  const candidates = chromeKandidaten();
   const fileUrl = "file://" + encodeURI(path.resolve(htmlPath));
   const basis = ["--headless=new", "--disable-gpu", "--no-pdf-header-footer",
     `--print-to-pdf=${path.resolve(pdfPath)}`, "--virtual-time-budget=20000"];
@@ -111,4 +137,8 @@ async function main() {
   console.log(pdfBin ? `PDF:   ${pdfPath}` : `PDF:   (kein Chrome gefunden – die HTML ist druckfertig & selbsttragend, per Browser-Druck als PDF speicherbar)`);
 }
 
-main();
+// Nur beim direkten Aufruf laufen lassen - so ist chromeKandidaten() testbar,
+// ohne dass ein require() gleich einen ganzen Report erzeugt.
+if (require.main === module) main();
+
+module.exports = { chromeKandidaten };
